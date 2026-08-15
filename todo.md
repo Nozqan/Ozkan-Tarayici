@@ -38,3 +38,6 @@
 - [x] Paket güncellemesi sonrası duran geliştirme sunucusunu yeniden başlatıp AI uç noktasını doğrulamak
 - [x] Sekmeler, yer imleri, geçmiş ve ayarları alt çubuktan kaldırıp üç nokta işlem menüsüne taşımak
 - [x] Ana sayfa yazılarını, kartlarını ve boşluklarını daha kompakt mobil ölçeğe ayarlamak
+- [x] Paylaşılan proje önizlemesini en son sürümle yeniden başlatmak
+- [x] Senkronize edilen ana sayfada alt gezinmeyi kaldırıp üç nokta menüsü erişimlerini yeniden doğrulamak
+- [x] Üç nokta menüsünü referanstaki tarayıcı menüsü hiyerarşisine daha yakın ve ana sayfayı daha kompakt hâle getirmek
