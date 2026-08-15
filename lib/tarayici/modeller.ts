@@ -1,4 +1,5 @@
 export type SekmeTuru = "normal" | "gizli";
+export type AramaMotoru = "google" | "yandex";
 
 export interface Sekme {
   id: string;
@@ -31,6 +32,9 @@ export interface TarayiciAyarlari {
   guvenliDns: boolean;
   koyuTema: boolean;
   masaustuGorunumu: boolean;
+  aramaMotoru: AramaMotoru;
+  yetiskinErisimOnayi: boolean;
+  yetiskinUyumOnayi: boolean;
 }
 
 export type IndirmeDurumu = "indiriliyor" | "duraklatildi" | "tamamlandi" | "basarisiz" | "engellendi";
@@ -69,14 +73,17 @@ export const varsayilanAyarlar: TarayiciAyarlari = {
   guvenliDns: false,
   koyuTema: true,
   masaustuGorunumu: false,
+  aramaMotoru: "google",
+  yetiskinErisimOnayi: false,
+  yetiskinUyumOnayi: false,
 };
 
 export function benzersizKimlik(onEk: string) {
   return `${onEk}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-export function yeniSekme(girdi?: string, tur: SekmeTuru = "normal"): Sekme {
-  const url = girdi ? adresiCoz(girdi) : YENI_SEKME_URL;
+export function yeniSekme(girdi?: string, tur: SekmeTuru = "normal", aramaMotoru: AramaMotoru = "google"): Sekme {
+  const url = girdi ? adresiCoz(girdi, aramaMotoru) : YENI_SEKME_URL;
   return { id: benzersizKimlik("sekme"), url, baslik: url === YENI_SEKME_URL ? "Yeni Sekme" : urlBasligi(url), tur, yukleniyor: false, sonErisim: Date.now() };
 }
 
@@ -115,12 +122,12 @@ export function indirmeAdayiMi(url: string) {
   }
 }
 
-export function adresiCoz(girdi: string) {
+export function adresiCoz(girdi: string, aramaMotoru: AramaMotoru = "google") {
   const temiz = girdi.trim();
   if (!temiz) return YENI_SEKME_URL;
   if (/^https?:\/\//i.test(temiz)) return temiz;
   if (/^[a-z0-9-]+(\.[a-z0-9-]+)+(\/[^\s]*)?$/i.test(temiz)) return `https://${temiz}`;
-  return `https://www.google.com/search?q=${encodeURIComponent(temiz)}`;
+  return aramaMotoru === "yandex" ? `https://yandex.com/search/?text=${encodeURIComponent(temiz)}` : `https://www.google.com/search?q=${encodeURIComponent(temiz)}`;
 }
 
 export function urlBasligi(url: string) {

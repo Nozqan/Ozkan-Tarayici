@@ -41,3 +41,6 @@
 - [x] Paylaşılan proje önizlemesini en son sürümle yeniden başlatmak
 - [x] Senkronize edilen ana sayfada alt gezinmeyi kaldırıp üç nokta menüsü erişimlerini yeniden doğrulamak
 - [x] Üç nokta menüsünü referanstaki tarayıcı menüsü hiyerarşisine daha yakın ve ana sayfayı daha kompakt hâle getirmek
+- [x] 18+ erişim kapısı, kalıcı yaş onayı ve uygunsuz içerik reddetme akışı eklemek
+- [x] Google ve Yandex arasında kullanıcı seçimiyle çalışan arama motoru tercihleri eklemek
+- [x] Yetişkin içerik kullanım koşulları, gizlilik bildirimi ve ülke/mağaza uyum notlarını eklemek

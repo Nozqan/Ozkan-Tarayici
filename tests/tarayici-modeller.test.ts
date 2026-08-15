@@ -15,6 +15,10 @@ describe("tarayıcı adres çözümü", () => {
     expect(adresiCoz("akrep tarayıcı")).toBe("https://www.google.com/search?q=akrep%20taray%C4%B1c%C4%B1");
   });
 
+  it("Yandex seçildiğinde kullanıcı aramasını Yandex üzerinde başlatır", () => {
+    expect(adresiCoz("akrep tarayıcı", "yandex")).toBe("https://yandex.com/search/?text=akrep%20taray%C4%B1c%C4%B1");
+  });
+
   it("boş yeni sekmenin başlangıç URL'sini kullanır", () => {
     const sekme = yeniSekme();
     expect(sekme.url).toBe(YENI_SEKME_URL);

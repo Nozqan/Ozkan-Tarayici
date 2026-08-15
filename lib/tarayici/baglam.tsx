@@ -58,8 +58,10 @@ export function TarayiciSaglayici({ children }: PropsWithChildren) {
   const etkinSekme = useMemo(() => durum.sekmeler.find((sekme) => sekme.id === durum.etkinSekmeId) ?? durum.sekmeler[0], [durum.etkinSekmeId, durum.sekmeler]);
 
   const sekmeAc = useCallback((girdi?: string, tur: SekmeTuru = "normal") => {
-    const eklenenSekme = yeniSekme(girdi, tur);
-    durumAyarla((onceki) => ({ ...onceki, sekmeler: [eklenenSekme, ...onceki.sekmeler], etkinSekmeId: eklenenSekme.id }));
+    durumAyarla((onceki) => {
+      const eklenenSekme = yeniSekme(girdi, tur, onceki.ayarlar.aramaMotoru);
+      return { ...onceki, sekmeler: [eklenenSekme, ...onceki.sekmeler], etkinSekmeId: eklenenSekme.id };
+    });
   }, []);
 
   const sekmeKapat = useCallback((id: string) => {
