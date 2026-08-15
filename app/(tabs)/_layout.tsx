@@ -1,40 +1,10 @@
+import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { Tabs } from "expo-router";
+import { Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { HapticTab } from "@/components/haptic-tab";
-import { IconSymbol } from "@/components/ui/icon-symbol";
-import { Platform } from "react-native";
-import { useColors } from "@/hooks/use-colors";
-
-export default function TabLayout() {
-  const colors = useColors();
-  const insets = useSafeAreaInsets();
-  const bottomPadding = Platform.OS === "web" ? 12 : Math.max(insets.bottom, 8);
-  const tabBarHeight = 56 + bottomPadding;
-
-  return (
-    <Tabs
-      screenOptions={{
-        tabBarActiveTintColor: colors.tint,
-        headerShown: false,
-        tabBarButton: HapticTab,
-        tabBarStyle: {
-          paddingTop: 8,
-          paddingBottom: bottomPadding,
-          height: tabBarHeight,
-          backgroundColor: colors.background,
-          borderTopColor: colors.border,
-          borderTopWidth: 0.5,
-        },
-      }}
-    >
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: "Home",
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
-        }}
-      />
-    </Tabs>
-  );
+export default function SekmeYerlesimi() {
+  const alanlar = useSafeAreaInsets();
+  const altBosluk = Platform.OS === "web" ? 10 : Math.max(alanlar.bottom, 9);
+  return <Tabs screenOptions={{ headerShown: false, tabBarActiveTintColor: "#FF6A2A", tabBarInactiveTintColor: "#8D9AAC", tabBarStyle: { height: 60 + altBosluk, paddingTop: 8, paddingBottom: altBosluk, backgroundColor: "#0C1118", borderTopColor: "rgba(168, 179, 194, 0.16)" }, tabBarLabelStyle: { fontSize: 10, fontWeight: "700" } }}><Tabs.Screen name="index" options={{ title: "Ana Sayfa", tabBarIcon: ({ color, size }) => <MaterialCommunityIcons name="compass-outline" size={size} color={color} /> }} /><Tabs.Screen name="sekmeler" options={{ title: "Sekmeler", tabBarIcon: ({ color, size }) => <MaterialCommunityIcons name="tab" size={size} color={color} /> }} /><Tabs.Screen name="yer-imleri" options={{ title: "Yer İmleri", tabBarIcon: ({ color, size }) => <MaterialCommunityIcons name="star-outline" size={size} color={color} /> }} /><Tabs.Screen name="gecmis" options={{ title: "Geçmiş", tabBarIcon: ({ color, size }) => <MaterialCommunityIcons name="history" size={size} color={color} /> }} /><Tabs.Screen name="ayarlar" options={{ title: "Ayarlar", tabBarIcon: ({ color, size }) => <MaterialCommunityIcons name="cog-outline" size={size} color={color} /> }} /></Tabs>;
 }

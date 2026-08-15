@@ -1,0 +1,22 @@
+# Proje TODO
+
+- [x] Akrep Tarayıcı mobil tasarım planını belgelemek
+- [x] Ürün spesifikasyonunu proje belgelerine bağlamak
+- [x] Akrep marka ikonunu üretmek ve uygulama varlıklarını güncellemek
+- [x] Akrep renk sistemi ve cam temayı uygulamak
+- [x] Uygulama adı ve marka yapılandırmasını güncellemek
+- [x] Ana sayfa ve yeni sekme deneyimini oluşturmak
+- [x] Yerel sekme veri modeli ve kalıcı depolamayı kurmak
+- [x] Sekme Merkezi, normal/gizli sekme akışı ve kapatma davranışını geliştirmek
+- [x] Adres/arama girişi ve gerçek gezinme yönlendirmesini hazırlamak
+- [x] Yer imleri ve geçmiş ekranlarını yerel verilerle geliştirmek
+- [x] Gizlilik Merkezi ve gerçek olmayan koruma özellikleri için dürüst durum ekranları eklemek
+- [x] VPN Merkezi için gerçek entegrasyon gereksinimlerini açıklayan durum akışı eklemek
+- [x] Yapay Zekâ Merkezi için kullanıcı izinli entegrasyon hazırlığı eklemek
+- [x] Ayarlar, tema ve kalıcı kullanıcı tercihlerini eklemek
+- [x] İndirme Merkezi boş/hazırlık durumunu eklemek
+- [x] Birim testleri ve tip kontrolünü çalıştırmak
+- [x] Güvenlik anahtarı ve token sızıntısı taraması yapmak
+- [ ] İlk proje sürümünü gizli GitHub deposuna push etmek
+- [x] Geliştirme sunucusu erişim sorununu yeniden başlatıp doğrulamak
+- [x] A+B Akrep Cam ve sade gezinme tasarım yönünü uygulamak
