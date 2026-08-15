@@ -22,5 +22,6 @@
 - [ ] Sağlanan Ozkan-Tarayici deposuna ilk Akrep Tarayıcı commit'ini push etmek
 - [ ] GitHub oturumunu Nozqan hesabıyla yeniden yetkilendirmek
 - [ ] Yenilenen Nozqan GitHub oturumuyla depo yazma erişimini doğrulamak
+- [ ] GitHub OAuth oturumuna workflow izni ekleyip Actions dosyasıyla push işlemini tekrar denemek
 - [x] Geliştirme sunucusu erişim sorununu yeniden başlatıp doğrulamak
 - [x] A+B Akrep Cam ve sade gezinme tasarım yönünü uygulamak
