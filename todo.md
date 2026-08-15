@@ -26,4 +26,4 @@
 - [x] Geliştirme sunucusu erişim sorununu yeniden başlatıp doğrulamak
 - [x] A+B Akrep Cam ve sade gezinme tasarım yönünü uygulamak
 - [x] Uygulama ikonlarını checkpoint boyut sınırına uygun olarak optimize etmek
-- [ ] Checkpoint sonrası değişen uzak depoyu GitHub'a geri bağlayıp optimize ikonları push etmek
+- [x] Checkpoint sonrası değişen uzak depoyu GitHub'a geri bağlayıp optimize ikonları push etmek
