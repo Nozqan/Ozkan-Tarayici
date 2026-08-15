@@ -17,11 +17,12 @@
 - [x] İndirme Merkezi boş/hazırlık durumunu eklemek
 - [x] Birim testleri ve tip kontrolünü çalıştırmak
 - [x] Güvenlik anahtarı ve token sızıntısı taraması yapmak
-- [ ] İlk proje sürümünü gizli GitHub deposuna push etmek
-- [ ] Nozqan/Ozkan-Tarayici deposuna `ozqan1` hesabı için yazma yetkisi sağlamak veya Nozqan hesabıyla yeniden yetkilendirmek
-- [ ] Sağlanan Ozkan-Tarayici deposuna ilk Akrep Tarayıcı commit'ini push etmek
-- [ ] GitHub oturumunu Nozqan hesabıyla yeniden yetkilendirmek
-- [ ] Yenilenen Nozqan GitHub oturumuyla depo yazma erişimini doğrulamak
-- [ ] GitHub OAuth oturumuna workflow izni ekleyip Actions dosyasıyla push işlemini tekrar denemek
+- [x] İlk proje sürümünü gizli GitHub deposuna push etmek
+- [x] Nozqan/Ozkan-Tarayici deposuna `ozqan1` hesabı için yazma yetkisi sağlamak veya Nozqan hesabıyla yeniden yetkilendirmek
+- [x] Sağlanan Ozkan-Tarayici deposuna ilk Akrep Tarayıcı commit'ini push etmek
+- [x] GitHub oturumunu Nozqan hesabıyla yeniden yetkilendirmek
+- [x] Yenilenen Nozqan GitHub oturumuyla depo yazma erişimini doğrulamak
+- [x] GitHub OAuth oturumuna workflow izni ekleyip Actions dosyasıyla push işlemini tekrar denemek
 - [x] Geliştirme sunucusu erişim sorununu yeniden başlatıp doğrulamak
 - [x] A+B Akrep Cam ve sade gezinme tasarım yönünü uygulamak
+- [x] Uygulama ikonlarını checkpoint boyut sınırına uygun olarak optimize etmek
