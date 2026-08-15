@@ -17,5 +17,5 @@ function UygulamaIcerigi() {
   const { durum, yuklendi } = useTarayici();
   if (!yuklendi) return null;
   if (!durum.ayarlar.yetiskinErisimOnayi) return <YetiskinErisimKapisi />;
-  return <><StatusBar style="light" /><Stack screenOptions={{ headerShown: false, animation: "fade", contentStyle: { backgroundColor: "#080B10" } }}><Stack.Screen name="(tabs)" /><Stack.Screen name="tarayici" /><Stack.Screen name="gizlilik" /><Stack.Screen name="vpn" /><Stack.Screen name="yapay-zeka" /><Stack.Screen name="indirmeler" /><Stack.Screen name="yetiskin-uyum" /></Stack></>;
+  return <><StatusBar style="light" /><Stack screenOptions={{ headerShown: false, animation: "fade", contentStyle: { backgroundColor: "#080B10" } }}><Stack.Screen name="(tabs)" /><Stack.Screen name="tarayici" /><Stack.Screen name="tarayici-merkezi" /><Stack.Screen name="gizlilik" /><Stack.Screen name="vpn" /><Stack.Screen name="yapay-zeka" /><Stack.Screen name="indirmeler" /><Stack.Screen name="yetiskin-uyum" /></Stack></>;
 }

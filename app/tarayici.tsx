@@ -1,17 +1,18 @@
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { router } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Modal, Platform, Pressable, Share, StyleSheet, Text, TextInput, View } from "react-native";
 import * as ReactNativeWebView from "react-native-webview";
 
 import { AdresCubugu } from "@/bilesenler/adres-cubugu";
 import { CamKart, YuvarlakButon } from "@/bilesenler/akrep-ui";
+import { UzunTarayiciMenusu } from "@/bilesenler/uzun-tarayici-menusu";
 import { gezinmeKarari, reklamEngellemeBetigi, sayfaMetniCikarimBetigi } from "@/lib/tarayici/filtreler";
 import { useTarayici } from "@/lib/tarayici/baglam";
 import { adresiCoz, indirmeAdayiMi, YENI_SEKME_URL } from "@/lib/tarayici/modeller";
 
 const YerelWebGorunumu: any = (ReactNativeWebView as any).default;
-type WebGorunumuRef = { goBack: () => void; goForward: () => void; reload: () => void };
+type WebGorunumuRef = { goBack: () => void; goForward: () => void; reload: () => void; injectJavaScript: (betik: string) => void };
 type WebGorunumuNavigasyonu = { url: string; title?: string };
 type WebGorunumuIstek = { url: string; isTopFrame?: boolean };
 type WebMesaji = { tip?: string; adet?: number; metin?: string; baslik?: string };
@@ -22,122 +23,58 @@ const ANA_SAYFA_ROTASI = "/(tabs)" as never;
 
 export default function TarayiciEkrani() {
   const webGorunumu = useRef<WebGorunumuRef | null>(null);
-  const { durum, etkinSekme, sayfayaGit, sekmeAc, yerImiDegistir, yukleniyorAyarla, sayfaMetniniKaydet, engellenenIstekEkle, indirmeBaslat } = useTarayici();
+  const { durum, etkinSekme, sayfayaGit, sekmeAc, yerImiDegistir, yukleniyorAyarla, sayfaMetniniKaydet, engellenenIstekEkle, indirmeBaslat, ayariDegistir, sekmeGrubuOlustur, okumaListesineEkle, taramaVerileriniTemizle } = useTarayici();
   const [hata, hataAyarla] = useState<string | null>(null);
+  const [menuAcik, menuAcikAyarla] = useState(false);
+  const [bulAcik, bulAcikAyarla] = useState(false);
+  const [arananMetin, arananMetinAyarla] = useState("");
+  const [okumaModu, okumaModuAyarla] = useState(false);
   const yeniSekmeMi = etkinSekme.url === YENI_SEKME_URL;
   const yildizli = useMemo(() => durum.yerImleri.some((item) => item.url === etkinSekme.url), [durum.yerImleri, etkinSekme.url]);
   const kuralBetigi = useMemo(() => reklamEngellemeBetigi(durum.ayarlar.reklamEngelleme, durum.ayarlar.takipKoruma), [durum.ayarlar.reklamEngelleme, durum.ayarlar.takipKoruma]);
+  const gorunumBetigi = useMemo(() => sayfaGorunumBetigi(durum.ayarlar.sayfaOlcegi, durum.ayarlar.geceGorunumu), [durum.ayarlar.sayfaOlcegi, durum.ayarlar.geceGorunumu]);
 
-  useEffect(() => { hataAyarla(null); }, [etkinSekme.id]);
+  useEffect(() => { hataAyarla(null); okumaModuAyarla(false); }, [etkinSekme.id]);
+  useEffect(() => { webGorunumu.current?.injectJavaScript(gorunumBetigi); }, [gorunumBetigi]);
+  useEffect(() => { if (durum.ayarlar.otomatikOkumaModu && etkinSekme.sayfaMetni && etkinSekme.sayfaMetni.length > 1200) okumaModuAyarla(true); }, [durum.ayarlar.otomatikOkumaModu, etkinSekme.sayfaMetni]);
 
   const girdiGonder = (girdi: string) => {
-    const hamUrl = adresiCoz(girdi);
+    const hamUrl = adresiCoz(girdi, durum.ayarlar.aramaMotoru);
     if (hamUrl === YENI_SEKME_URL) return;
     const karar = gezinmeKarari(hamUrl, durum.ayarlar);
-    if (!karar.izinli) {
-      hataAyarla(karar.neden);
-      engellenenIstekEkle();
-      return;
-    }
-    if (indirmeAdayiMi(karar.url)) {
-      void indirmeBaslat(karar.url);
-      router.push("/indirmeler" as never);
-      return;
-    }
-    hataAyarla(null);
-    sayfayaGit(etkinSekme.id, karar.url);
+    if (!karar.izinli) { hataAyarla(karar.neden); engellenenIstekEkle(); return; }
+    if (indirmeAdayiMi(karar.url)) { void indirmeBaslat(karar.url); router.push("/indirmeler" as never); return; }
+    hataAyarla(null); sayfayaGit(etkinSekme.id, karar.url);
   };
 
   const gezinmeyiDenetle = (istek: WebGorunumuIstek) => {
     if (!/^https?:\/\//i.test(istek.url)) return true;
     const karar = gezinmeKarari(istek.url, durum.ayarlar);
-    if (!karar.izinli) {
-      engellenenIstekEkle();
-      if (istek.isTopFrame !== false) hataAyarla(karar.neden);
-      return false;
-    }
-    if (indirmeAdayiMi(karar.url) && istek.isTopFrame !== false) {
-      void indirmeBaslat(karar.url);
-      router.push("/indirmeler" as never);
-      return false;
-    }
-    if (karar.url !== istek.url && istek.isTopFrame !== false) {
-      sayfayaGit(etkinSekme.id, karar.url);
-      return false;
-    }
+    if (!karar.izinli) { engellenenIstekEkle(); if (istek.isTopFrame !== false) hataAyarla(karar.neden); return false; }
+    if (indirmeAdayiMi(karar.url) && istek.isTopFrame !== false) { void indirmeBaslat(karar.url); router.push("/indirmeler" as never); return false; }
+    if (karar.url !== istek.url && istek.isTopFrame !== false) { sayfayaGit(etkinSekme.id, karar.url); return false; }
     return true;
   };
 
-  const webMesajiniIsle = (ham: string) => {
-    try {
-      const mesaj = JSON.parse(ham) as WebMesaji;
-      if (mesaj.tip === "filtre" && typeof mesaj.adet === "number") engellenenIstekEkle(mesaj.adet);
-      if (mesaj.tip === "sayfa_metni" && typeof mesaj.metin === "string") sayfaMetniniKaydet(etkinSekme.id, mesaj.metin, mesaj.baslik);
-    } catch {
-      // Sayfa içeriğinden gelen bozuk mesajlar güvenle yok sayılır.
-    }
-  };
+  const webMesajiniIsle = (ham: string) => { try { const mesaj = JSON.parse(ham) as WebMesaji; if (mesaj.tip === "filtre" && typeof mesaj.adet === "number") engellenenIstekEkle(mesaj.adet); if (mesaj.tip === "sayfa_metni" && typeof mesaj.metin === "string") sayfaMetniniKaydet(etkinSekme.id, mesaj.metin, mesaj.baslik); } catch { /* Sayfa mesajları güvenle doğrulanır. */ } };
+  const yeniNormalSekme = () => { sekmeAc(); router.replace(TARAYICI_ROTASI); };
+  const yeniGizliSekme = () => { sekmeAc(undefined, "gizli"); router.replace(TARAYICI_ROTASI); };
+  const sayfayiBul = () => { if (!arananMetin.trim()) return; webGorunumu.current?.injectJavaScript(`window.find(${JSON.stringify(arananMetin)}, false, false, true, false, false, false); true;`); };
+  const paylas = async () => { try { await Share.share({ title: etkinSekme.baslik, message: etkinSekme.url }); } catch { hataAyarla("Paylaşım ekranı açılamadı."); } };
+  const veriTemizle = () => Alert.alert("Tarama verilerini temizle", "Geçmiş, yer imleri, okuma listesi ve son kapatılan sekmeler silinir.", [{ text: "Vazgeç", style: "cancel" }, { text: "Temizle", style: "destructive", onPress: taramaVerileriniTemizle }]);
+  const olcegiDegistir = () => { const sonraki = durum.ayarlar.sayfaOlcegi === 90 ? 100 : durum.ayarlar.sayfaOlcegi === 100 ? 110 : 90; ayariDegistir("sayfaOlcegi", sonraki); };
 
   if (Platform.OS === "web") return <WebTarayiciSiniri onGeri={() => router.back()} />;
+  if (yeniSekmeMi) return <View style={styles.ekran}><AdresCubugu deger="" onGonder={girdiGonder} yukleniyor={false} /><View style={styles.yeniSekmeIcerik}><View style={styles.amblem}><MaterialCommunityIcons name="zodiac-scorpio" size={45} color="#FF6A2A" /></View><Text style={styles.yeniBaslik}>Yeni sekme</Text><Text style={styles.yeniAciklama}>Adres çubuğuna bir URL yaz veya seçtiğin arama motorunda arama başlat.</Text><YuvarlakButon icon="compass-outline" etiket="Ana sayfaya dön" onPress={() => router.replace(ANA_SAYFA_ROTASI)} /></View></View>;
 
-  if (yeniSekmeMi) {
-    return <View style={styles.ekran}><AdresCubugu deger="" onGonder={girdiGonder} yukleniyor={false} /><View style={styles.yeniSekmeIcerik}><View style={styles.amblem}><MaterialCommunityIcons name="zodiac-scorpio" size={45} color="#FF6A2A" /></View><Text style={styles.yeniBaslik}>Yeni sekme</Text><Text style={styles.yeniAciklama}>Adres çubuğuna bir URL yaz veya arama başlat. HTTPS dosya bağlantıları doğrudan İndirme Merkezi’ne aktarılır.</Text><YuvarlakButon icon="compass-outline" etiket="Ana sayfaya dön" onPress={() => router.replace(ANA_SAYFA_ROTASI)} /></View></View>;
-  }
-
-  return (
-    <View style={styles.ekran}>
-      <AdresCubugu deger={etkinSekme.url} onGonder={girdiGonder} onYildiz={yerImiDegistir} yildizli={yildizli} yukleniyor={etkinSekme.yukleniyor} />
-      {(durum.ayarlar.reklamEngelleme || durum.ayarlar.takipKoruma) ? <View style={styles.korumaCubugu}><MaterialCommunityIcons name="shield-check-outline" color="#68DC9A" size={14} /><Text style={styles.korumaMetni}>WebView koruması etkin · {durum.engellenenIstekSayisi} istek engellendi</Text></View> : null}
-      {hata ? <CamKart style={styles.hataKart}><MaterialCommunityIcons name="alert-circle-outline" color="#FF9AA2" size={20} /><Text style={styles.hataMetni}>{hata}</Text></CamKart> : null}
-      <View style={styles.webKapsayici}>
-        <YerelWebGorunumu
-          ref={webGorunumu}
-          source={{ uri: etkinSekme.url }}
-          userAgent={durum.ayarlar.masaustuGorunumu ? "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/124 Safari/537.36" : undefined}
-          onError={(olay: { nativeEvent: { description?: string } }) => { yukleniyorAyarla(etkinSekme.id, false); hataAyarla(olay.nativeEvent.description || "Sayfa yüklenemedi."); }}
-          onLoadEnd={() => yukleniyorAyarla(etkinSekme.id, false)}
-          onLoadStart={() => yukleniyorAyarla(etkinSekme.id, true)}
-          onNavigationStateChange={(navigasyon: WebGorunumuNavigasyonu) => navigasyonuKaydet(navigasyon, etkinSekme.id, sayfayaGit)}
-          onShouldStartLoadWithRequest={gezinmeyiDenetle}
-          onFileDownload={(olay: { nativeEvent: { downloadUrl: string } }) => { void indirmeBaslat(olay.nativeEvent.downloadUrl); router.push("/indirmeler" as never); }}
-          injectedJavaScriptBeforeContentLoaded={kuralBetigi}
-          injectedJavaScript={sayfaMetniCikarimBetigi()}
-          onMessage={(olay: { nativeEvent: { data: string } }) => webMesajiniIsle(olay.nativeEvent.data)}
-          startInLoadingState
-          renderLoading={() => <View style={styles.yukleme}><ActivityIndicator color="#FF6A2A" /><Text style={styles.yuklemeMetni}>Sayfa yükleniyor</Text></View>}
-          style={styles.webGorunumu}
-        />
-      </View>
-      <View style={styles.altCubuk}>
-        <AltSimge etiket="Geri" icon="arrow-left" onPress={() => webGorunumu.current?.goBack()} />
-        <AltSimge etiket="İleri" icon="arrow-right" onPress={() => webGorunumu.current?.goForward()} />
-        <AltSimge etiket="Yenile" icon="reload" onPress={() => webGorunumu.current?.reload()} />
-        <AltSimge etiket="İndirmeler" icon="download-outline" onPress={() => router.push("/indirmeler" as never)} />
-        <Pressable accessibilityLabel="Yeni sekme" onPress={() => { sekmeAc(); router.replace(TARAYICI_ROTASI); }} style={({ pressed }) => [styles.yeniButon, pressed && styles.basili]}><MaterialCommunityIcons name="plus" color="#080B10" size={21} /></Pressable>
-        <Pressable accessibilityLabel="Sekme merkezi" onPress={() => router.replace(SEKME_ROTASI)} style={({ pressed }) => [styles.sekmeSayaci, pressed && styles.basili]}><Text style={styles.sekmeSayisi}>{durum.sekmeler.length}</Text></Pressable>
-      </View>
-    </View>
-  );
+  return <View style={styles.ekran}><AdresCubugu deger={etkinSekme.url} onGonder={girdiGonder} onYildiz={yerImiDegistir} yildizli={yildizli} yukleniyor={etkinSekme.yukleniyor} />{(durum.ayarlar.reklamEngelleme || durum.ayarlar.takipKoruma) ? <View style={styles.korumaCubugu}><MaterialCommunityIcons name="shield-check-outline" color="#68DC9A" size={14} /><Text style={styles.korumaMetni}>WebView koruması · {durum.engellenenIstekSayisi} istek engellendi</Text><Pressable accessibilityLabel="Tarayıcı menüsünü aç" onPress={() => menuAcikAyarla(true)} style={({ pressed }) => [styles.menuTetikleyici, pressed && styles.basili]}><MaterialCommunityIcons name="dots-vertical" color="#C7D6CB" size={21} /></Pressable></View> : null}{hata ? <CamKart style={styles.hataKart}><MaterialCommunityIcons name="alert-circle-outline" color="#FF9AA2" size={20} /><Text style={styles.hataMetni}>{hata}</Text></CamKart> : null}<View style={styles.webKapsayici}><YerelWebGorunumu ref={webGorunumu} source={{ uri: etkinSekme.url }} userAgent={durum.ayarlar.masaustuGorunumu ? "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/124 Safari/537.36" : undefined} setSupportMultipleWindows={!durum.ayarlar.popUpEngelleme} onError={(olay: { nativeEvent: { description?: string } }) => { yukleniyorAyarla(etkinSekme.id, false); hataAyarla(olay.nativeEvent.description || "Sayfa yüklenemedi."); }} onLoadEnd={() => { yukleniyorAyarla(etkinSekme.id, false); webGorunumu.current?.injectJavaScript(gorunumBetigi); }} onLoadStart={() => yukleniyorAyarla(etkinSekme.id, true)} onNavigationStateChange={(navigasyon: WebGorunumuNavigasyonu) => navigasyonuKaydet(navigasyon, etkinSekme.id, sayfayaGit)} onShouldStartLoadWithRequest={gezinmeyiDenetle} onFileDownload={(olay: { nativeEvent: { downloadUrl: string } }) => { void indirmeBaslat(olay.nativeEvent.downloadUrl); router.push("/indirmeler" as never); }} injectedJavaScriptBeforeContentLoaded={kuralBetigi} injectedJavaScript={`${sayfaMetniCikarimBetigi()}\n${gorunumBetigi}`} onMessage={(olay: { nativeEvent: { data: string } }) => webMesajiniIsle(olay.nativeEvent.data)} startInLoadingState renderLoading={() => <View style={styles.yukleme}><ActivityIndicator color="#FF6A2A" /><Text style={styles.yuklemeMetni}>Sayfa yükleniyor</Text></View>} style={styles.webGorunumu} /></View><View style={styles.altCubuk}><AltSimge etiket="Geri" icon="arrow-left" onPress={() => webGorunumu.current?.goBack()} /><AltSimge etiket="İleri" icon="arrow-right" onPress={() => webGorunumu.current?.goForward()} /><AltSimge etiket="Yenile" icon="reload" onPress={() => webGorunumu.current?.reload()} /><AltSimge etiket="Araçlar" icon="dots-horizontal-circle-outline" onPress={() => menuAcikAyarla(true)} /><Pressable accessibilityLabel="Yeni sekme" onPress={yeniNormalSekme} style={({ pressed }) => [styles.yeniButon, pressed && styles.basili]}><MaterialCommunityIcons name="plus" color="#080B10" size={21} /></Pressable><Pressable accessibilityLabel="Sekme merkezi" onPress={() => router.replace(SEKME_ROTASI)} style={({ pressed }) => [styles.sekmeSayaci, pressed && styles.basili]}><Text style={styles.sekmeSayisi}>{durum.sekmeler.length}</Text></Pressable></View><UzunTarayiciMenusu acik={menuAcik} onKapat={() => menuAcikAyarla(false)} onGeri={() => webGorunumu.current?.goBack()} onIleri={() => webGorunumu.current?.goForward()} onYenile={() => webGorunumu.current?.reload()} onYeniSekme={yeniNormalSekme} onGizliSekme={yeniGizliSekme} onSekmeGrubu={() => { sekmeGrubuOlustur("Yeni grup"); router.push(SEKME_ROTASI); }} onSekmeler={() => router.push(SEKME_ROTASI)} onSonSekmeler={() => router.push(SEKME_ROTASI)} onGecmis={() => router.push("/(tabs)/gecmis" as never)} onTaramaVerileriniTemizle={veriTemizle} onIndirmeler={() => router.push("/indirmeler" as never)} onYerImleri={() => router.push("/(tabs)/yer-imleri" as never)} onOkumaListesi={() => router.push("/tarayici-merkezi" as never)} onSayfadaBul={() => bulAcikAyarla(true)} onPaylas={() => void paylas()} onCevir={() => router.push("/yapay-zeka" as never)} onOkumaModu={() => okumaModuAyarla(true)} onMasaustu={() => ayariDegistir("masaustuGorunumu", !durum.ayarlar.masaustuGorunumu)} masaustuEtkin={durum.ayarlar.masaustuGorunumu} onGeceGorunumu={() => ayariDegistir("geceGorunumu", !durum.ayarlar.geceGorunumu)} geceGorunumuEtkin={durum.ayarlar.geceGorunumu} onOlcek={olcegiDegistir} olcekEtiketi={`%${durum.ayarlar.sayfaOlcegi}`} onGizlilik={() => router.push("/gizlilik" as never)} onTarayiciMerkezi={() => router.push("/tarayici-merkezi" as never)} /><BulPaneli acik={bulAcik} deger={arananMetin} onDegis={arananMetinAyarla} onBul={sayfayiBul} onKapat={() => bulAcikAyarla(false)} />{okumaModu ? <OkumaModu baslik={etkinSekme.baslik} metin={etkinSekme.sayfaMetni} onKapat={() => okumaModuAyarla(false)} onListeyeEkle={okumaListesineEkle} /> : null}</View>;
 }
 
-function AltSimge({ etiket, icon, onPress }: { etiket: string; icon: React.ComponentProps<typeof MaterialCommunityIcons>["name"]; onPress: () => void }) {
-  return <Pressable accessibilityLabel={etiket} onPress={onPress} style={({ pressed }) => [styles.altSimge, pressed && styles.basili]}><MaterialCommunityIcons name={icon} color="#F6F8FB" size={20} /></Pressable>;
-}
+function BulPaneli({ acik, deger, onDegis, onBul, onKapat }: { acik: boolean; deger: string; onDegis: (metin: string) => void; onBul: () => void; onKapat: () => void }) { return <Modal transparent animationType="fade" visible={acik} onRequestClose={onKapat}><View style={styles.bulPerdesi}><View style={styles.bulPaneli}><MaterialCommunityIcons name="magnify" size={20} color="#2E3137" /><TextInput autoFocus accessibilityLabel="Sayfada aranacak metin" onChangeText={onDegis} onSubmitEditing={onBul} placeholder="Sayfada bul" placeholderTextColor="#6F737B" style={styles.bulGirdi} value={deger} /><Pressable accessibilityLabel="Sonraki eşleşmeyi bul" onPress={onBul} style={styles.bulButon}><MaterialCommunityIcons name="arrow-down" size={19} color="#2E3137" /></Pressable><Pressable accessibilityLabel="Sayfada bul panelini kapat" onPress={onKapat} style={styles.bulButon}><MaterialCommunityIcons name="close" size={19} color="#2E3137" /></Pressable></View></View></Modal>; }
+function OkumaModu({ baslik, metin, onKapat, onListeyeEkle }: { baslik: string; metin?: string; onKapat: () => void; onListeyeEkle: () => void }) { return <View style={styles.okumaPerdesi}><View style={styles.okumaUst}><Pressable accessibilityLabel="Okuma modunu kapat" onPress={onKapat} style={styles.okumaSimge}><MaterialCommunityIcons name="close" size={21} color="#283126" /></Pressable><Text numberOfLines={1} style={styles.okumaEtiket}>Okuma modu</Text><Pressable accessibilityLabel="Okuma listesine ekle" onPress={onListeyeEkle} style={styles.okumaSimge}><MaterialCommunityIcons name="book-plus-outline" size={21} color="#283126" /></Pressable></View><Text style={styles.okumaBaslik}>{baslik}</Text><Text style={styles.okumaMetin}>{metin || "Sayfa metni hazırlanıyor. Sayfa yüklemesi tamamlandıktan sonra okuma modunu tekrar aç."}</Text></View>; }
+function AltSimge({ etiket, icon, onPress }: { etiket: string; icon: React.ComponentProps<typeof MaterialCommunityIcons>["name"]; onPress: () => void }) { return <Pressable accessibilityLabel={etiket} onPress={onPress} style={({ pressed }) => [styles.altSimge, pressed && styles.basili]}><MaterialCommunityIcons name={icon} color="#F6F8FB" size={20} /></Pressable>; }
+function navigasyonuKaydet(navigasyon: WebGorunumuNavigasyonu, sekmeId: string, sayfayaGit: (id: string, url: string, baslik?: string) => void) { if (navigasyon.url && /^https?:\/\//.test(navigasyon.url)) sayfayaGit(sekmeId, navigasyon.url, navigasyon.title); }
+function sayfaGorunumBetigi(olcek: number, gece: boolean) { return `(() => { const k = document.documentElement; k.style.zoom = '${olcek}%'; k.style.filter = ${gece ? "'invert(0.92) hue-rotate(180deg)'" : "'none'"}; document.body && (document.body.style.background = ${gece ? "'#161616'" : "''"}); })(); true;`; }
+function WebTarayiciSiniri({ onGeri }: { onGeri: () => void }) { return <View style={styles.webSinirEkrani}><CamKart style={styles.webSinirKart}><MaterialCommunityIcons name="cellphone-link" size={32} color="#FFB000" /><Text style={styles.webSinirBaslik}>Cihaz önizlemesi gerekli</Text><Text style={styles.webSinirAciklama}>Gerçek WebView, arama, filtreleme, okuma modu ve indirme davranışları Android veya iOS cihazda çalışır.</Text><YuvarlakButon icon="arrow-left" etiket="Ana sayfaya dön" onPress={onGeri} style={styles.webSinirButon} /></CamKart></View>; }
 
-function navigasyonuKaydet(navigasyon: WebGorunumuNavigasyonu, sekmeId: string, sayfayaGit: (id: string, url: string, baslik?: string) => void) {
-  if (navigasyon.url && /^https?:\/\//.test(navigasyon.url)) sayfayaGit(sekmeId, navigasyon.url, navigasyon.title);
-}
-
-function WebTarayiciSiniri({ onGeri }: { onGeri: () => void }) {
-  return <View style={styles.webSinirEkrani}><CamKart style={styles.webSinirKart}><MaterialCommunityIcons name="cellphone-link" size={32} color="#FFB000" /><Text style={styles.webSinirBaslik}>Cihaz önizlemesi gerekli</Text><Text style={styles.webSinirAciklama}>Gerçek WebView, filtreleme ve indirme davranışları Android veya iOS cihazda çalışır. Web önizlemesi bu yerel motorları barındırmaz.</Text><YuvarlakButon icon="arrow-left" etiket="Ana sayfaya dön" onPress={onGeri} style={styles.webSinirButon} /></CamKart></View>;
-}
-
-const styles = StyleSheet.create({
-  ekran: { flex: 1, backgroundColor: "#080B10" }, webKapsayici: { flex: 1, backgroundColor: "#F6F8FB" }, webGorunumu: { flex: 1 },
-  korumaCubugu: { minHeight: 28, flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 16, backgroundColor: "#10251A" }, korumaMetni: { color: "#9CDDB7", fontSize: 10, fontWeight: "700" },
-  yukleme: { flex: 1, justifyContent: "center", alignItems: "center", gap: 9, backgroundColor: "#080B10" }, yuklemeMetni: { color: "#A8B3C2", fontSize: 13 },
-  hataKart: { marginHorizontal: 18, marginVertical: 8, padding: 12, flexDirection: "row", gap: 9, alignItems: "center", borderColor: "rgba(255, 77, 90, 0.4)" }, hataMetni: { flex: 1, color: "#FFB0B7", fontSize: 12, lineHeight: 17 },
-  altCubuk: { minHeight: 62, paddingHorizontal: 12, flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: "#0C1118", borderTopColor: "rgba(168, 179, 194, 0.15)", borderTopWidth: 1 }, altSimge: { width: 37, height: 42, alignItems: "center", justifyContent: "center", borderRadius: 14 }, yeniButon: { width: 42, height: 42, borderRadius: 15, alignItems: "center", justifyContent: "center", backgroundColor: "#FF6A2A" }, sekmeSayaci: { width: 35, height: 35, borderRadius: 12, alignItems: "center", justifyContent: "center", borderColor: "rgba(246, 248, 251, 0.25)", borderWidth: 1 }, sekmeSayisi: { color: "#F6F8FB", fontSize: 12, fontWeight: "900" },
-  yeniSekmeIcerik: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 38 }, amblem: { width: 80, height: 80, borderRadius: 29, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255, 106, 42, 0.13)", borderColor: "rgba(255, 106, 42, 0.3)", borderWidth: 1 }, yeniBaslik: { color: "#F6F8FB", fontSize: 24, lineHeight: 30, fontWeight: "900", marginTop: 18 }, yeniAciklama: { color: "#A8B3C2", fontSize: 14, lineHeight: 21, textAlign: "center", marginTop: 8, marginBottom: 20 },
-  webSinirEkrani: { flex: 1, justifyContent: "center", padding: 20, backgroundColor: "#080B10" }, webSinirKart: { padding: 28, alignItems: "center" }, webSinirBaslik: { color: "#F6F8FB", fontSize: 20, lineHeight: 26, fontWeight: "900", marginTop: 14 }, webSinirAciklama: { color: "#A8B3C2", textAlign: "center", fontSize: 13, lineHeight: 20, marginTop: 8 }, webSinirButon: { marginTop: 20 }, basili: { opacity: 0.7, transform: [{ scale: 0.96 }] },
-});
+const styles = StyleSheet.create({ ekran: { flex: 1, backgroundColor: "#080B10" }, webKapsayici: { flex: 1, backgroundColor: "#F6F8FB" }, webGorunumu: { flex: 1 }, korumaCubugu: { minHeight: 29, flexDirection: "row", alignItems: "center", gap: 6, paddingLeft: 16, backgroundColor: "#10251A" }, korumaMetni: { flex: 1, color: "#9CDDB7", fontSize: 10, fontWeight: "700" }, menuTetikleyici: { width: 42, minHeight: 29, alignItems: "center", justifyContent: "center" }, yukleme: { flex: 1, justifyContent: "center", alignItems: "center", gap: 9, backgroundColor: "#080B10" }, yuklemeMetni: { color: "#A8B3C2", fontSize: 13 }, hataKart: { marginHorizontal: 18, marginVertical: 8, padding: 12, flexDirection: "row", gap: 9, alignItems: "center", borderColor: "rgba(255, 77, 90, 0.4)" }, hataMetni: { flex: 1, color: "#FFB0B7", fontSize: 12, lineHeight: 17 }, altCubuk: { minHeight: 62, paddingHorizontal: 12, flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: "#0C1118", borderTopColor: "rgba(168, 179, 194, 0.15)", borderTopWidth: 1 }, altSimge: { width: 37, height: 42, alignItems: "center", justifyContent: "center", borderRadius: 14 }, yeniButon: { width: 42, height: 42, borderRadius: 15, alignItems: "center", justifyContent: "center", backgroundColor: "#FF6A2A" }, sekmeSayaci: { width: 35, height: 35, borderRadius: 12, alignItems: "center", justifyContent: "center", borderColor: "rgba(246, 248, 251, 0.25)", borderWidth: 1 }, sekmeSayisi: { color: "#F6F8FB", fontSize: 12, fontWeight: "900" }, yeniSekmeIcerik: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 38 }, amblem: { width: 80, height: 80, borderRadius: 29, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255, 106, 42, 0.13)", borderColor: "rgba(255, 106, 42, 0.3)", borderWidth: 1 }, yeniBaslik: { color: "#F6F8FB", fontSize: 24, lineHeight: 30, fontWeight: "900", marginTop: 18 }, yeniAciklama: { color: "#A8B3C2", fontSize: 14, lineHeight: 21, textAlign: "center", marginTop: 8, marginBottom: 20 }, bulPerdesi: { flex: 1, paddingTop: 58, paddingHorizontal: 12, backgroundColor: "rgba(0,0,0,0.20)" }, bulPaneli: { height: 54, borderRadius: 18, paddingHorizontal: 12, gap: 8, flexDirection: "row", alignItems: "center", backgroundColor: "#F7F9EA" }, bulGirdi: { flex: 1, color: "#2E3137", fontSize: 14, minHeight: 44 }, bulButon: { width: 36, height: 36, borderRadius: 12, backgroundColor: "#E7EDDE", alignItems: "center", justifyContent: "center" }, okumaPerdesi: { ...StyleSheet.absoluteFillObject, backgroundColor: "#F9F5E9", paddingTop: 48, paddingHorizontal: 22 }, okumaUst: { minHeight: 45, flexDirection: "row", alignItems: "center", justifyContent: "space-between", borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "#D8D1BF", marginBottom: 18 }, okumaSimge: { width: 39, height: 39, alignItems: "center", justifyContent: "center", borderRadius: 14, backgroundColor: "#EEE8D9" }, okumaEtiket: { color: "#646152", fontSize: 12, fontWeight: "900" }, okumaBaslik: { color: "#283126", fontSize: 26, lineHeight: 33, fontWeight: "800" }, okumaMetin: { color: "#3D403A", fontSize: 17, lineHeight: 28, marginTop: 18 }, webSinirEkrani: { flex: 1, justifyContent: "center", padding: 20, backgroundColor: "#080B10" }, webSinirKart: { padding: 28, alignItems: "center" }, webSinirBaslik: { color: "#F6F8FB", fontSize: 20, lineHeight: 26, fontWeight: "900", marginTop: 14 }, webSinirAciklama: { color: "#A8B3C2", textAlign: "center", fontSize: 13, lineHeight: 20, marginTop: 8 }, webSinirButon: { marginTop: 20 }, basili: { opacity: 0.7, transform: [{ scale: 0.96 }] } });

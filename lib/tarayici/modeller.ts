@@ -9,6 +9,22 @@ export interface Sekme {
   yukleniyor: boolean;
   sonErisim: number;
   sayfaMetni?: string;
+  grupId?: string;
+  sabitlenmis?: boolean;
+  uyuyor?: boolean;
+}
+
+export interface SekmeGrubu {
+  id: string;
+  ad: string;
+  renk: string;
+  olusturulma: number;
+}
+
+export interface KapatilanSekme {
+  id: string;
+  sekme: Sekme;
+  kapanmaZamani: number;
 }
 
 export interface YerImi {
@@ -35,6 +51,11 @@ export interface TarayiciAyarlari {
   aramaMotoru: AramaMotoru;
   yetiskinErisimOnayi: boolean;
   yetiskinUyumOnayi: boolean;
+  sayfaOlcegi: number;
+  geceGorunumu: boolean;
+  popUpEngelleme: boolean;
+  otomatikOkumaModu: boolean;
+  linkOnizlemeleri: boolean;
 }
 
 export type IndirmeDurumu = "indiriliyor" | "duraklatildi" | "tamamlandi" | "basarisiz" | "engellendi";
@@ -62,6 +83,9 @@ export interface TarayiciDurumu {
   ayarlar: TarayiciAyarlari;
   indirmeler: IndirmeGorevi[];
   engellenenIstekSayisi: number;
+  sekmeGruplari: SekmeGrubu[];
+  kapatilanSekmeler: KapatilanSekme[];
+  okumaListesi: YerImi[];
 }
 
 export const YENI_SEKME_URL = "akrep://yeni-sekme";
@@ -76,6 +100,11 @@ export const varsayilanAyarlar: TarayiciAyarlari = {
   aramaMotoru: "google",
   yetiskinErisimOnayi: false,
   yetiskinUyumOnayi: false,
+  sayfaOlcegi: 100,
+  geceGorunumu: false,
+  popUpEngelleme: true,
+  otomatikOkumaModu: false,
+  linkOnizlemeleri: true,
 };
 
 export function benzersizKimlik(onEk: string) {
@@ -88,15 +117,7 @@ export function yeniSekme(girdi?: string, tur: SekmeTuru = "normal", aramaMotoru
 }
 
 export function yeniIndirme(url: string, onerilenAd?: string): IndirmeGorevi {
-  return {
-    id: benzersizKimlik("indirme"),
-    url,
-    dosyaAdi: guvenliDosyaAdi(onerilenAd || urlDosyaAdi(url)),
-    durum: "indiriliyor",
-    baslangicZamani: Date.now(),
-    indirilenBayt: 0,
-    toplamBayt: null,
-  };
+  return { id: benzersizKimlik("indirme"), url, dosyaAdi: guvenliDosyaAdi(onerilenAd || urlDosyaAdi(url)), durum: "indiriliyor", baslangicZamani: Date.now(), indirilenBayt: 0, toplamBayt: null };
 }
 
 export function guvenliDosyaAdi(ad: string) {

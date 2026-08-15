@@ -44,3 +44,8 @@
 - [x] 18+ erişim kapısı, kalıcı yaş onayı ve uygunsuz içerik reddetme akışı eklemek
 - [x] Google ve Yandex arasında kullanıcı seçimiyle çalışan arama motoru tercihleri eklemek
 - [x] Yetişkin içerik kullanım koşulları, gizlilik bildirimi ve ülke/mağaza uyum notlarını eklemek
+- [x] Uzun Chrome benzeri üç nokta menüsü ile gerçek sayfa araçlarını eklemek
+- [x] Sayfada bul, paylaş, okuma modu ve masaüstü görünümü eylemlerini eklemek
+- [x] Sekme grupları, yakın zamanda kapatılan sekmeler ve görünüm kontrollerini eklemek
+- [x] Ayarları ayrı panel görünümünden çıkarıp bütünleşik Tarayıcı Merkezi deneyimine dönüştürmek
+- [x] Üç nokta menüsü ve tarayıcı arayüzünü etkileyen 30 işlevsel özelliği tek tasarım sistemi içinde tamamlamak

@@ -5,6 +5,7 @@ import { FlatList, ImageBackground, Modal, Pressable, StyleSheet, Text, TextInpu
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { dokunsalGeriBildirim } from "@/bilesenler/akrep-ui";
+import { UzunTarayiciMenusu } from "@/bilesenler/uzun-tarayici-menusu";
 import { useTarayici } from "@/lib/tarayici/baglam";
 
 const ARKA_PLAN = "/manus-storage/akrep-yeni-sekme-arka-plan_c72f368d.jpg";
@@ -49,25 +50,8 @@ export default function AnaSayfa() {
 }
 
 function TarayiciMenusu({ acik, onKapat, onYeniSekme, onGizliSekme, onGecmisiTemizle, onGit }: { acik: boolean; onKapat: () => void; onYeniSekme: () => void; onGizliSekme: () => void; onGecmisiTemizle: () => void; onGit: (rota: string) => void }) {
-  const geriDon = () => { onKapat(); if (expoRouter.canGoBack()) expoRouter.back(); };
-  const anaSayfayiYenile = () => { onKapat(); expoRouter.replace("/(tabs)" as never); };
-  const eylemler = [
-    { id: "yeni", icon: "plus-box-outline" as const, ad: "Yeni sekme", onPress: onYeniSekme },
-    { id: "gizli", icon: "incognito" as const, ad: "Yeni gizli sekme", onPress: onGizliSekme },
-    { id: "sekmeler", icon: "tab" as const, ad: "Sekmeler", onPress: () => onGit("/(tabs)/sekmeler") },
-    { id: "gecmis", icon: "history" as const, ad: "Geçmiş", onPress: () => onGit("/(tabs)/gecmis") },
-    { id: "temizle", icon: "trash-can-outline" as const, ad: "Geçmişi temizle", onPress: onGecmisiTemizle },
-    { id: "indirme", icon: "download-outline" as const, ad: "İndirilenler", onPress: () => onGit("/indirmeler") },
-    { id: "yerimi", icon: "star-outline" as const, ad: "Yer imleri", onPress: () => onGit("/(tabs)/yer-imleri") },
-    { id: "gizlilik", icon: "shield-check-outline" as const, ad: "Gizlilik", onPress: () => onGit("/gizlilik") },
-    { id: "ayarlar", icon: "cog-outline" as const, ad: "Ayarlar", onPress: () => onGit("/(tabs)/ayarlar") },
-    { id: "uyum", icon: "shield-account-outline" as const, ad: "18+ erişim ve uyum", onPress: () => onGit("/yetiskin-uyum") },
-  ];
-  return <Modal animationType="fade" transparent visible={acik} onRequestClose={onKapat}><Pressable accessibilityLabel="Menüyü kapat" onPress={onKapat} style={styles.menuPerdesi}><Pressable onPress={(olay) => olay.stopPropagation()} style={styles.menuPaneli}><View style={styles.menuHizliEylemler}><MenuYuvarlakButon icon="arrow-left" etiket="Geri" onPress={geriDon} /><MenuYuvarlakButon icon="star-outline" etiket="Yer imleri" onPress={() => onGit("/(tabs)/yer-imleri")} /><MenuYuvarlakButon icon="download-outline" etiket="İndirilenler" onPress={() => onGit("/indirmeler")} /><MenuYuvarlakButon icon="refresh" etiket="Yenile" onPress={anaSayfayiYenile} /></View>{eylemler.map((eylem, indeks) => <View key={eylem.id}>{indeks === 3 || indeks === 5 ? <View style={styles.menuAyirac} /> : null}<Pressable accessibilityLabel={eylem.ad} onPress={eylem.onPress} style={({ pressed }) => [styles.menuSatiri, pressed && styles.menuBasili]}><View style={styles.menuSimge}><MaterialCommunityIcons name={eylem.icon} color="#32372D" size={21} /></View><Text style={styles.menuMetni}>{eylem.ad}</Text><MaterialCommunityIcons name="chevron-right" color="#8D9386" size={18} /></Pressable></View>)}</Pressable></Pressable></Modal>;
-}
-
-function MenuYuvarlakButon({ icon, etiket, onPress }: { icon: React.ComponentProps<typeof MaterialCommunityIcons>["name"]; etiket: string; onPress: () => void }) {
-  return <Pressable accessibilityLabel={etiket} onPress={onPress} style={({ pressed }) => [styles.menuYuvarlakButon, pressed && styles.menuBasili]}><MaterialCommunityIcons name={icon} color="#32372D" size={23} /></Pressable>;
+  const { durum, ayariDegistir, sekmeGrubuOlustur, taramaVerileriniTemizle } = useTarayici();
+  return <UzunTarayiciMenusu acik={acik} onKapat={onKapat} onGeri={expoRouter.canGoBack() ? () => expoRouter.back() : undefined} onYenile={() => expoRouter.replace("/(tabs)" as never)} onYeniSekme={onYeniSekme} onGizliSekme={onGizliSekme} onSekmeGrubu={() => { sekmeGrubuOlustur("Yeni grup"); onGit("/(tabs)/sekmeler"); }} onSekmeler={() => onGit("/(tabs)/sekmeler")} onSonSekmeler={() => onGit("/(tabs)/sekmeler")} onGecmis={() => onGit("/(tabs)/gecmis")} onTaramaVerileriniTemizle={() => { taramaVerileriniTemizle(); onGecmisiTemizle(); }} onIndirmeler={() => onGit("/indirmeler")} onYerImleri={() => onGit("/(tabs)/yer-imleri")} onOkumaListesi={() => onGit("/tarayici-merkezi")} onCevir={() => onGit("/yapay-zeka")} onMasaustu={() => ayariDegistir("masaustuGorunumu", !durum.ayarlar.masaustuGorunumu)} masaustuEtkin={durum.ayarlar.masaustuGorunumu} onGeceGorunumu={() => ayariDegistir("geceGorunumu", !durum.ayarlar.geceGorunumu)} geceGorunumuEtkin={durum.ayarlar.geceGorunumu} onOlcek={() => ayariDegistir("sayfaOlcegi", durum.ayarlar.sayfaOlcegi === 90 ? 100 : durum.ayarlar.sayfaOlcegi === 100 ? 110 : 90)} olcekEtiketi={`%${durum.ayarlar.sayfaOlcegi}`} onGizlilik={() => onGit("/gizlilik")} onTarayiciMerkezi={() => onGit("/tarayici-merkezi")} />;
 }
 
 function AramaMotoruSecici({ acik, secili, onKapat, onSec }: { acik: boolean; secili: "google" | "yandex"; onKapat: () => void; onSec: (motor: "google" | "yandex") => void }) {
