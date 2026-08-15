@@ -3,64 +3,11 @@ import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-nati
 
 type Simge = React.ComponentProps<typeof MaterialCommunityIcons>["name"];
 type Eylem = { id: string; ad: string; icon: Simge; onPress?: () => void; ayirac?: boolean; durum?: string };
-
-export interface UzunTarayiciMenusuProps {
-  acik: boolean;
-  onKapat: () => void;
-  onGeri?: () => void;
-  onIleri?: () => void;
-  onYenile?: () => void;
-  onYeniSekme: () => void;
-  onGizliSekme: () => void;
-  onSekmeGrubu: () => void;
-  onSekmeler: () => void;
-  onSonSekmeler: () => void;
-  onGecmis: () => void;
-  onTaramaVerileriniTemizle: () => void;
-  onIndirmeler: () => void;
-  onYerImleri: () => void;
-  onOkumaListesi: () => void;
-  onSayfadaBul?: () => void;
-  onPaylas?: () => void;
-  onCevir?: () => void;
-  onOkumaModu?: () => void;
-  onMasaustu?: () => void;
-  masaustuEtkin?: boolean;
-  onGeceGorunumu?: () => void;
-  geceGorunumuEtkin?: boolean;
-  onOlcek?: () => void;
-  olcekEtiketi?: string;
-  onGizlilik: () => void;
-  onTarayiciMerkezi: () => void;
-}
-
+export interface UzunTarayiciMenusuProps { acik: boolean; onKapat: () => void; onGeri?: () => void; onIleri?: () => void; onYenile?: () => void; onYeniSekme: () => void; onGizliSekme: () => void; onSekmeGrubu: () => void; onSekmeler: () => void; onSonSekmeler: () => void; onGecmis: () => void; onTaramaVerileriniTemizle: () => void; onIndirmeler: () => void; onYerImleri: () => void; onOkumaListesi: () => void; onSayfadaBul?: () => void; onPaylas?: () => void; onCevir?: () => void; onOkumaModu?: () => void; onPdfKaydet?: () => void; onNotlar?: () => void; onVurgu?: () => void; onMasaustu?: () => void; masaustuEtkin?: boolean; onGeceGorunumu?: () => void; geceGorunumuEtkin?: boolean; onGorselEngelle?: () => void; gorselEngellemeEtkin?: boolean; onOlcek?: () => void; olcekEtiketi?: string; onIzinler?: () => void; onGizlilik: () => void; onTarayiciMerkezi: () => void; }
 export function UzunTarayiciMenusu(props: UzunTarayiciMenusuProps) {
   const calistir = (eylem?: () => void) => { if (!eylem) return; props.onKapat(); eylem(); };
-  const eylemler = ([
-    { id: "yeni", ad: "Yeni sekme", icon: "plus-box-outline", onPress: props.onYeniSekme },
-    { id: "gizli", ad: "Yeni gizli sekme", icon: "incognito", onPress: props.onGizliSekme },
-    { id: "grup", ad: "Sekmeyi yeni gruba ekle", icon: "folder-plus-outline", onPress: props.onSekmeGrubu },
-    { id: "sekmeler", ad: "Sekmeleri yönet", icon: "tab", onPress: props.onSekmeler },
-    { id: "son", ad: "Son kapatılan sekmeler", icon: "tab-restore", onPress: props.onSonSekmeler, ayirac: true },
-    { id: "gecmis", ad: "Geçmiş", icon: "history", onPress: props.onGecmis },
-    { id: "temizle", ad: "Tarama verilerini temizle", icon: "delete-sweep-outline", onPress: props.onTaramaVerileriniTemizle },
-    { id: "indirme", ad: "İndirilenler", icon: "download-outline", onPress: props.onIndirmeler, ayirac: true },
-    { id: "yerimi", ad: "Yer imleri", icon: "star-outline", onPress: props.onYerImleri },
-    { id: "okuma-listesi", ad: "Okuma listesi", icon: "book-open-page-variant-outline", onPress: props.onOkumaListesi },
-    { id: "bul", ad: "Sayfada bul", icon: "file-find-outline", onPress: props.onSayfadaBul, ayirac: Boolean(props.onSayfadaBul) },
-    { id: "paylas", ad: "Paylaş", icon: "share-variant-outline", onPress: props.onPaylas },
-    { id: "cevir", ad: "AI ile çevir veya açıkla", icon: "translate", onPress: props.onCevir },
-    { id: "okuma", ad: "Okuma modunu göster", icon: "text-box-search-outline", onPress: props.onOkumaModu },
-    { id: "masaustu", ad: "Masaüstü site", icon: "monitor", onPress: props.onMasaustu, durum: props.masaustuEtkin ? "Açık" : "Kapalı", ayirac: Boolean(props.onMasaustu) },
-    { id: "gece", ad: "Gece görünümü", icon: "weather-night", onPress: props.onGeceGorunumu, durum: props.geceGorunumuEtkin ? "Açık" : "Kapalı" },
-    { id: "olcek", ad: "Sayfa ölçeği", icon: "format-size", onPress: props.onOlcek, durum: props.olcekEtiketi },
-    { id: "gizlilik", ad: "Site ve gizlilik kontrolleri", icon: "shield-check-outline", onPress: props.onGizlilik, ayirac: true },
-    { id: "merkez", ad: "Tarayıcı Merkezi", icon: "tune-variant", onPress: props.onTarayiciMerkezi },
-  ] as Eylem[]).filter((eylem) => eylem.onPress);
-
+  const eylemler = ([{ id: "yeni", ad: "Yeni sekme", icon: "plus-box-outline", onPress: props.onYeniSekme }, { id: "gizli", ad: "Yeni gizli sekme", icon: "incognito", onPress: props.onGizliSekme }, { id: "grup", ad: "Sekmeyi yeni gruba ekle", icon: "folder-plus-outline", onPress: props.onSekmeGrubu }, { id: "sekmeler", ad: "Sekmeleri yönet", icon: "tab", onPress: props.onSekmeler }, { id: "son", ad: "Son kapatılan sekmeler", icon: "tab-restore", onPress: props.onSonSekmeler, ayirac: true }, { id: "gecmis", ad: "Geçmiş", icon: "history", onPress: props.onGecmis }, { id: "temizle", ad: "Tarama verilerini temizle", icon: "delete-sweep-outline", onPress: props.onTaramaVerileriniTemizle }, { id: "indirme", ad: "İndirilenler", icon: "download-outline", onPress: props.onIndirmeler, ayirac: true }, { id: "yerimi", ad: "Yer imleri", icon: "star-outline", onPress: props.onYerImleri }, { id: "okuma-listesi", ad: "Okuma listesi", icon: "book-open-page-variant-outline", onPress: props.onOkumaListesi }, { id: "bul", ad: "Sayfada bul", icon: "file-find-outline", onPress: props.onSayfadaBul, ayirac: Boolean(props.onSayfadaBul) }, { id: "paylas", ad: "Paylaş", icon: "share-variant-outline", onPress: props.onPaylas }, { id: "pdf", ad: "Sayfayı PDF olarak kaydet", icon: "file-pdf-box", onPress: props.onPdfKaydet }, { id: "notlar", ad: "Sayfa notları", icon: "note-text-outline", onPress: props.onNotlar }, { id: "vurgu", ad: "Seçili metni vurgula", icon: "format-color-highlight", onPress: props.onVurgu }, { id: "cevir", ad: "AI ile çevir veya açıkla", icon: "translate", onPress: props.onCevir }, { id: "okuma", ad: "Okuma modunu göster", icon: "text-box-search-outline", onPress: props.onOkumaModu }, { id: "masaustu", ad: "Masaüstü site", icon: "monitor", onPress: props.onMasaustu, durum: props.masaustuEtkin ? "Açık" : "Kapalı", ayirac: Boolean(props.onMasaustu) }, { id: "gece", ad: "Gece görünümü", icon: "weather-night", onPress: props.onGeceGorunumu, durum: props.geceGorunumuEtkin ? "Açık" : "Kapalı" }, { id: "gorsel", ad: "Görsel engelleme", icon: "image-off-outline", onPress: props.onGorselEngelle, durum: props.gorselEngellemeEtkin ? "Açık" : "Kapalı" }, { id: "olcek", ad: "Sayfa ölçeği", icon: "format-size", onPress: props.onOlcek, durum: props.olcekEtiketi }, { id: "izinler", ad: "Bu sitenin izinleri", icon: "shield-key-outline", onPress: props.onIzinler, ayirac: Boolean(props.onIzinler) }, { id: "gizlilik", ad: "Site ve gizlilik kontrolleri", icon: "shield-check-outline", onPress: props.onGizlilik }, { id: "merkez", ad: "Tarayıcı Merkezi", icon: "tune-variant", onPress: props.onTarayiciMerkezi } ] as Eylem[]).filter((eylem) => eylem.onPress);
   return <Modal transparent animationType="fade" visible={props.acik} onRequestClose={props.onKapat}><Pressable accessibilityLabel="Tarayıcı menüsünü kapat" onPress={props.onKapat} style={styles.perde}><Pressable onPress={(olay) => olay.stopPropagation()} style={styles.panel}><View style={styles.hizli}><Hizli icon="arrow-left" etiket="Geri" onPress={() => calistir(props.onGeri)} devreDisi={!props.onGeri} /><Hizli icon="arrow-right" etiket="İleri" onPress={() => calistir(props.onIleri)} devreDisi={!props.onIleri} /><Hizli icon="star-outline" etiket="Yer imi" onPress={() => calistir(props.onYerImleri)} /><Hizli icon="download-outline" etiket="İndir" onPress={() => calistir(props.onIndirmeler)} /><Hizli icon="refresh" etiket="Yenile" onPress={() => calistir(props.onYenile)} devreDisi={!props.onYenile} /></View><ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.liste}>{eylemler.map((eylem) => <View key={eylem.id}>{eylem.ayirac ? <View style={styles.ayirac} /> : null}<Pressable accessibilityLabel={eylem.ad} onPress={() => calistir(eylem.onPress)} style={({ pressed }) => [styles.satir, pressed && styles.basili]}><View style={styles.simge}><MaterialCommunityIcons name={eylem.icon} color="#32372D" size={21} /></View><Text style={styles.metin}>{eylem.ad}</Text>{eylem.durum ? <Text style={styles.durum}>{eylem.durum}</Text> : <MaterialCommunityIcons name="chevron-right" color="#8D9386" size={18} />}</Pressable></View>)}</ScrollView></Pressable></Pressable></Modal>;
 }
-
 function Hizli({ icon, etiket, onPress, devreDisi }: { icon: Simge; etiket: string; onPress: () => void; devreDisi?: boolean }) { return <Pressable accessibilityLabel={etiket} disabled={devreDisi} onPress={onPress} style={({ pressed }) => [styles.hizliButon, (pressed || devreDisi) && styles.devreDisi]}><MaterialCommunityIcons name={icon} color="#32372D" size={22} /></Pressable>; }
-
-const styles = StyleSheet.create({ perde: { flex: 1, backgroundColor: "rgba(0,0,0,0.36)", alignItems: "flex-end", paddingTop: 54, paddingRight: 10 }, panel: { width: 332, maxHeight: "84%", borderRadius: 27, overflow: "hidden", paddingTop: 10, backgroundColor: "#F7F9EA", shadowColor: "#000000", shadowOpacity: 0.28, shadowRadius: 16, elevation: 11 }, hizli: { flexDirection: "row", paddingHorizontal: 15, paddingBottom: 10, gap: 10 }, hizliButon: { width: 48, height: 48, alignItems: "center", justifyContent: "center", borderRadius: 24, backgroundColor: "#EDF0E4" }, liste: { paddingBottom: 10 }, satir: { minHeight: 50, paddingHorizontal: 16, flexDirection: "row", alignItems: "center", gap: 11 }, simge: { width: 30, alignItems: "center" }, metin: { flex: 1, color: "#32372D", fontSize: 15, fontWeight: "500" }, durum: { color: "#60705E", fontSize: 10, fontWeight: "800", borderRadius: 9, paddingHorizontal: 8, paddingVertical: 4, backgroundColor: "#E7EDDE" }, ayirac: { height: StyleSheet.hairlineWidth, backgroundColor: "#D8DDCA", marginHorizontal: 17, marginVertical: 4 }, basili: { backgroundColor: "#E9EEDC" }, devreDisi: { opacity: 0.36 } });
+const styles = StyleSheet.create({ perde: { flex: 1, backgroundColor: "rgba(0,0,0,0.36)", alignItems: "flex-end", paddingTop: 54, paddingRight: 10 }, panel: { width: 332, maxHeight: "84%", borderRadius: 27, overflow: "hidden", paddingTop: 10, backgroundColor: "#F7F9EA", shadowColor: "#000000", shadowOpacity: 0.28, shadowRadius: 16, elevation: 11 }, hizli: { flexDirection: "row", paddingHorizontal: 15, paddingBottom: 10, gap: 10 }, hizliButon: { width: 48, height: 48, alignItems: "center", justifyContent: "center", borderRadius: 24, backgroundColor: "#EDF0E4" }, liste: { paddingBottom: 10 }, satir: { minHeight: 50, paddingHorizontal: 16, flexDirection: "row", alignItems: "center", gap: 11 }, simge: { width: 30, alignItems: "center" }, metin: { flex: 1, color: "#32372D", fontSize: 14, fontWeight: "500" }, durum: { color: "#60705E", fontSize: 10, fontWeight: "800", borderRadius: 9, paddingHorizontal: 8, paddingVertical: 4, backgroundColor: "#E7EDDE" }, ayirac: { height: StyleSheet.hairlineWidth, backgroundColor: "#D8DDCA", marginHorizontal: 17, marginVertical: 4 }, basili: { backgroundColor: "#E9EEDC" }, devreDisi: { opacity: 0.36 } });

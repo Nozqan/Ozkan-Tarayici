@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useState } from "react";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 import { TarayiciSaglayici, useTarayici } from "@/lib/tarayici/baglam";
 import { createTRPCClient, trpc } from "@/lib/trpc";
@@ -10,12 +11,12 @@ import { YetiskinErisimKapisi } from "@/bilesenler/yetiskin-erisim-kapisi";
 export default function KokYerlesimi() {
   const [queryClient] = useState(() => new QueryClient());
   const [trpcClient] = useState(() => createTRPCClient());
-  return <trpc.Provider client={trpcClient} queryClient={queryClient}><QueryClientProvider client={queryClient}><TarayiciSaglayici><UygulamaIcerigi /></TarayiciSaglayici></QueryClientProvider></trpc.Provider>;
+  return <GestureHandlerRootView style={{ flex: 1 }}><trpc.Provider client={trpcClient} queryClient={queryClient}><QueryClientProvider client={queryClient}><TarayiciSaglayici><UygulamaIcerigi /></TarayiciSaglayici></QueryClientProvider></trpc.Provider></GestureHandlerRootView>;
 }
 
 function UygulamaIcerigi() {
   const { durum, yuklendi } = useTarayici();
   if (!yuklendi) return null;
   if (!durum.ayarlar.yetiskinErisimOnayi) return <YetiskinErisimKapisi />;
-  return <><StatusBar style="light" /><Stack screenOptions={{ headerShown: false, animation: "fade", contentStyle: { backgroundColor: "#080B10" } }}><Stack.Screen name="(tabs)" /><Stack.Screen name="tarayici" /><Stack.Screen name="tarayici-merkezi" /><Stack.Screen name="gizlilik" /><Stack.Screen name="vpn" /><Stack.Screen name="yapay-zeka" /><Stack.Screen name="indirmeler" /><Stack.Screen name="yetiskin-uyum" /></Stack></>;
+  return <><StatusBar style="light" /><Stack screenOptions={{ headerShown: false, animation: "fade", contentStyle: { backgroundColor: "#080B10" } }}><Stack.Screen name="(tabs)" /><Stack.Screen name="tarayici" /><Stack.Screen name="tarayici-merkezi" /><Stack.Screen name="gizlilik" /><Stack.Screen name="vpn" /><Stack.Screen name="yapay-zeka" /><Stack.Screen name="indirmeler" /><Stack.Screen name="yetiskin-uyum" /><Stack.Screen name="sayfa-notu" /><Stack.Screen name="site-izinleri" /><Stack.Screen name="baslangic-ayarlari" /></Stack></>;
 }

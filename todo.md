@@ -49,3 +49,8 @@
 - [x] Sekme grupları, yakın zamanda kapatılan sekmeler ve görünüm kontrollerini eklemek
 - [x] Ayarları ayrı panel görünümünden çıkarıp bütünleşik Tarayıcı Merkezi deneyimine dönüştürmek
 - [x] Üç nokta menüsü ve tarayıcı arayüzünü etkileyen 30 işlevsel özelliği tek tasarım sistemi içinde tamamlamak
+- [x] Sekme grubu ad/renk düzenleme, sekme sıralama ve sekme listesini paylaşma işlevlerini eklemek
+- [x] PDF kaydetme, sayfa notları ve okuma modu vurgularını eklemek
+- [x] Görsel engelleme, veri tasarrufu göstergesi, indirme sınıfları ve doğrulama bilgisini eklemek
+- [x] Bağlantı güvenlik rozeti ile alan adı bazlı izin kontrollerini eklemek
+- [x] Başlangıç sayfası, hızlı erişim, arama önerileri ve tek elle kullanım kişiselleştirmesini eklemek

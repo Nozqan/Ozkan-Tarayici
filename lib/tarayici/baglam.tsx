@@ -1,213 +1,49 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createContext, PropsWithChildren, useCallback, useContext, useEffect, useMemo, useState } from "react";
 
-import { benzersizKimlik, GecmisKaydi, IndirmeGorevi, Sekme, SekmeGrubu, SekmeTuru, TarayiciAyarlari, TarayiciDurumu, urlBasligi, varsayilanAyarlar, YerImi, yeniIndirme, yeniSekme, YENI_SEKME_URL } from "./modeller";
+import { alanAdiCikar, benzersizKimlik, GecmisKaydi, HizliErisimOgesi, IndirmeGorevi, SayfaNotu, SayfaVurgusu, Sekme, SekmeGrubu, SekmeTuru, SiteIzni, TarayiciAyarlari, TarayiciDurumu, urlBasligi, varsayilanAyarlar, YerImi, yeniIndirme, yeniSekme, YENI_SEKME_URL } from "./modeller";
 import { dosyaIndirmesiniBaslat, dosyaIndirmesiniDuraklat, indirmeDuraklatildiMi, indirilenDosyayiPaylas, indirilenDosyayiSil } from "./indirme-yoneticisi";
 
-const DEPOLAMA_ANAHTARI = "akrep-tarayici-v1";
+const DEPOLAMA_ANAHTARI = "akrep-tarayici-v2";
 const ilkSekme = yeniSekme();
-const baslangicDurumu: TarayiciDurumu = { sekmeler: [ilkSekme], etkinSekmeId: ilkSekme.id, yerImleri: [], gecmis: [], ayarlar: varsayilanAyarlar, indirmeler: [], engellenenIstekSayisi: 0, sekmeGruplari: [], kapatilanSekmeler: [], okumaListesi: [] };
+const baslangicDurumu: TarayiciDurumu = { sekmeler: [ilkSekme], etkinSekmeId: ilkSekme.id, yerImleri: [], gecmis: [], ayarlar: varsayilanAyarlar, indirmeler: [], engellenenIstekSayisi: 0, sekmeGruplari: [], kapatilanSekmeler: [], okumaListesi: [], sayfaNotlari: [], sayfaVurgulari: [], siteIzinleri: [], tasarrufEdilenBayt: 0 };
 
 interface TarayiciBaglamiDegeri {
-  durum: TarayiciDurumu;
-  yuklendi: boolean;
-  etkinSekme: Sekme;
-  sekmeAc: (girdi?: string, tur?: SekmeTuru) => void;
-  sekmeKapat: (id: string) => void;
-  etkinSekmeyiDegistir: (id: string) => void;
-  sayfayaGit: (id: string, url: string, baslik?: string) => void;
-  yukleniyorAyarla: (id: string, yukleniyor: boolean) => void;
-  yerImiDegistir: () => void;
-  yerImiSil: (id: string) => void;
-  gecmisiTemizle: () => void;
-  ayariDegistir: <K extends keyof TarayiciAyarlari>(anahtar: K, deger: TarayiciAyarlari[K]) => void;
-  sayfaMetniniKaydet: (id: string, metin: string, baslik?: string) => void;
-  engellenenIstekEkle: (adet?: number) => void;
-  indirmeBaslat: (url: string, dosyaAdi?: string, mimeTuru?: string) => Promise<void>;
-  indirmeDuraklat: (id: string) => Promise<void>;
-  indirmeyeDevam: (id: string) => Promise<void>;
-  indirmePaylas: (id: string) => Promise<void>;
-  indirmeSil: (id: string) => Promise<void>;
-  sekmeGrubuOlustur: (ad: string, sekmeId?: string) => void;
-  sekmeyiGrubaEkle: (sekmeId: string, grupId?: string) => void;
-  sekmeGrubunuSil: (grupId: string) => void;
-  sekmeyiSabitle: (sekmeId: string) => void;
-  sekmeyiUyut: (sekmeId: string) => void;
-  kapatilanSekmeyiGeriAc: (id: string) => void;
-  okumaListesineEkle: () => void;
-  okumaListesindenSil: (id: string) => void;
-  taramaVerileriniTemizle: () => void;
+  durum: TarayiciDurumu; yuklendi: boolean; etkinSekme: Sekme;
+  sekmeAc: (girdi?: string, tur?: SekmeTuru) => void; sekmeKapat: (id: string) => void; etkinSekmeyiDegistir: (id: string) => void; sayfayaGit: (id: string, url: string, baslik?: string) => void; yukleniyorAyarla: (id: string, yukleniyor: boolean) => void;
+  yerImiDegistir: () => void; yerImiSil: (id: string) => void; gecmisiTemizle: () => void; ayariDegistir: <K extends keyof TarayiciAyarlari>(anahtar: K, deger: TarayiciAyarlari[K]) => void; sayfaMetniniKaydet: (id: string, metin: string, baslik?: string) => void; engellenenIstekEkle: (adet?: number) => void; tasarrufEkle: (bayt?: number) => void;
+  indirmeBaslat: (url: string, dosyaAdi?: string, mimeTuru?: string) => Promise<void>; indirmeDuraklat: (id: string) => Promise<void>; indirmeyeDevam: (id: string) => Promise<void>; indirmePaylas: (id: string) => Promise<void>; indirmeSil: (id: string) => Promise<void>;
+  sekmeGrubuOlustur: (ad: string, sekmeId?: string) => void; sekmeGrubunuGuncelle: (id: string, degisiklik: Pick<SekmeGrubu, "ad" | "renk">) => void; sekmeyiGrubaEkle: (sekmeId: string, grupId?: string) => void; sekmeGrubunuSil: (grupId: string) => void; sekmeleriSirala: (idSiralama: string[]) => void; sekmeyiSabitle: (sekmeId: string) => void; sekmeyiUyut: (sekmeId: string) => void; kapatilanSekmeyiGeriAc: (id: string) => void;
+  okumaListesineEkle: () => void; okumaListesindenSil: (id: string) => void; notEkle: (url: string, metin: string) => void; notuGuncelle: (id: string, metin: string) => void; notSil: (id: string) => void; vurguEkle: (url: string, seciliMetin: string, renk?: string) => void; vurguSil: (id: string) => void; siteIzniAyarla: (alan: string, degisiklik: Partial<Omit<SiteIzni, "alan" | "guncellenme">>) => void; hizliErisimEkle: (oge: Omit<HizliErisimOgesi, "id">) => void; hizliErisimGuncelle: (id: string, oge: Omit<HizliErisimOgesi, "id">) => void; hizliErisimSil: (id: string) => void; hizliErisimleriSirala: (idSiralama: string[]) => void; aramaOnerisiEkle: (metin: string) => void; taramaVerileriniTemizle: () => void;
 }
-
 const TarayiciBaglami = createContext<TarayiciBaglamiDegeri | null>(null);
 
 export function TarayiciSaglayici({ children }: PropsWithChildren) {
-  const [durum, durumAyarla] = useState<TarayiciDurumu>(baslangicDurumu);
-  const [yuklendi, yuklendiAyarla] = useState(false);
-
-  useEffect(() => {
-    let etkin = true;
-    AsyncStorage.getItem(DEPOLAMA_ANAHTARI).then((hamVeri) => {
-      if (!etkin || !hamVeri) return;
-      const kayitliDurum = JSON.parse(hamVeri) as TarayiciDurumu;
-      if (kayitliDurum.sekmeler?.length) durumAyarla({ ...baslangicDurumu, ...kayitliDurum, ayarlar: { ...varsayilanAyarlar, ...kayitliDurum.ayarlar }, indirmeler: kayitliDurum.indirmeler ?? [], engellenenIstekSayisi: kayitliDurum.engellenenIstekSayisi ?? 0, sekmeGruplari: kayitliDurum.sekmeGruplari ?? [], kapatilanSekmeler: kayitliDurum.kapatilanSekmeler ?? [], okumaListesi: kayitliDurum.okumaListesi ?? [] });
-    }).catch(() => {
-      // Yerel depolama okunamazsa güvenli başlangıç durumu korunur.
-    }).finally(() => { if (etkin) yuklendiAyarla(true); });
-    return () => { etkin = false; };
-  }, []);
-
-  useEffect(() => {
-    if (!yuklendi) return;
-    AsyncStorage.setItem(DEPOLAMA_ANAHTARI, JSON.stringify(durum)).catch(() => {
-      // Depolama hatası veri kalıcılığını etkileyebilir; temel gezinme akışı devam eder.
-    });
-  }, [durum, yuklendi]);
-
+  const [durum, durumAyarla] = useState<TarayiciDurumu>(baslangicDurumu); const [yuklendi, yuklendiAyarla] = useState(false);
+  useEffect(() => { let etkin = true; AsyncStorage.getItem(DEPOLAMA_ANAHTARI).then((hamVeri) => { if (!etkin || !hamVeri) return; const kayit = JSON.parse(hamVeri) as Partial<TarayiciDurumu>; if (kayit.sekmeler?.length) durumAyarla({ ...baslangicDurumu, ...kayit, ayarlar: { ...varsayilanAyarlar, ...kayit.ayarlar, hizliErisimler: kayit.ayarlar?.hizliErisimler?.length ? kayit.ayarlar.hizliErisimler : varsayilanAyarlar.hizliErisimler }, indirmeler: kayit.indirmeler ?? [], sekmeGruplari: kayit.sekmeGruplari ?? [], kapatilanSekmeler: kayit.kapatilanSekmeler ?? [], okumaListesi: kayit.okumaListesi ?? [], sayfaNotlari: kayit.sayfaNotlari ?? [], sayfaVurgulari: kayit.sayfaVurgulari ?? [], siteIzinleri: kayit.siteIzinleri ?? [], tasarrufEdilenBayt: kayit.tasarrufEdilenBayt ?? 0 }); }).catch(() => undefined).finally(() => { if (etkin) yuklendiAyarla(true); }); return () => { etkin = false; }; }, []);
+  useEffect(() => { if (yuklendi) AsyncStorage.setItem(DEPOLAMA_ANAHTARI, JSON.stringify(durum)).catch(() => undefined); }, [durum, yuklendi]);
   const etkinSekme = useMemo(() => durum.sekmeler.find((sekme) => sekme.id === durum.etkinSekmeId) ?? durum.sekmeler[0], [durum.etkinSekmeId, durum.sekmeler]);
-
-  const sekmeAc = useCallback((girdi?: string, tur: SekmeTuru = "normal") => {
-    durumAyarla((onceki) => {
-      const eklenenSekme = yeniSekme(girdi, tur, onceki.ayarlar.aramaMotoru);
-      return { ...onceki, sekmeler: [eklenenSekme, ...onceki.sekmeler], etkinSekmeId: eklenenSekme.id };
-    });
-  }, []);
-
-  const sekmeKapat = useCallback((id: string) => {
-    durumAyarla((onceki) => {
-      const kapananSekme = onceki.sekmeler.find((sekme) => sekme.id === id);
-      if (onceki.sekmeler.length === 1) {
-        const sifirlananSekme = yeniSekme();
-        return { ...onceki, sekmeler: [sifirlananSekme], etkinSekmeId: sifirlananSekme.id };
-      }
-      const yeniListe = onceki.sekmeler.filter((sekme) => sekme.id !== id);
-      const kapatilanSekmeler = kapananSekme && kapananSekme.tur === "normal" ? [{ id: benzersizKimlik("kapatilan"), sekme: kapananSekme, kapanmaZamani: Date.now() }, ...onceki.kapatilanSekmeler].slice(0, 20) : onceki.kapatilanSekmeler;
-      return { ...onceki, sekmeler: yeniListe, kapatilanSekmeler, etkinSekmeId: onceki.etkinSekmeId === id ? yeniListe[0].id : onceki.etkinSekmeId };
-    });
-  }, []);
-
-  const etkinSekmeyiDegistir = useCallback((id: string) => {
-    durumAyarla((onceki) => ({ ...onceki, etkinSekmeId: id, sekmeler: onceki.sekmeler.map((sekme) => sekme.id === id ? { ...sekme, sonErisim: Date.now(), uyuyor: false } : sekme) }));
-  }, []);
-
-  const sayfayaGit = useCallback((id: string, url: string, baslik?: string) => {
-    if (url === YENI_SEKME_URL) return;
-    durumAyarla((onceki) => {
-      const hedefSekme = onceki.sekmeler.find((sekme) => sekme.id === id);
-      if (!hedefSekme) return onceki;
-      const yeniBaslik = baslik?.trim() || urlBasligi(url);
-      const ayniKayit = onceki.gecmis[0]?.url === url && onceki.gecmis[0]?.baslik === yeniBaslik;
-      const yeniGecmis: GecmisKaydi[] = hedefSekme.tur === "gizli" || ayniKayit ? onceki.gecmis : [{ id: benzersizKimlik("gecmis"), url, baslik: yeniBaslik, ziyaretZamani: Date.now() }, ...onceki.gecmis].slice(0, 150);
-      return { ...onceki, gecmis: yeniGecmis, sekmeler: onceki.sekmeler.map((sekme) => sekme.id === id ? { ...sekme, url, baslik: yeniBaslik, sonErisim: Date.now(), yukleniyor: false } : sekme) };
-    });
-  }, []);
-
-  const yukleniyorAyarla = useCallback((id: string, yukleniyor: boolean) => {
-    durumAyarla((onceki) => ({ ...onceki, sekmeler: onceki.sekmeler.map((sekme) => sekme.id === id ? { ...sekme, yukleniyor } : sekme) }));
-  }, []);
-
-  const yerImiDegistir = useCallback(() => {
-    durumAyarla((onceki) => {
-      const sekme = onceki.sekmeler.find((item) => item.id === onceki.etkinSekmeId);
-      if (!sekme || sekme.url === YENI_SEKME_URL) return onceki;
-      const mevcut = onceki.yerImleri.find((item) => item.url === sekme.url);
-      const yerImleri: YerImi[] = mevcut ? onceki.yerImleri.filter((item) => item.id !== mevcut.id) : [{ id: benzersizKimlik("yer-imi"), url: sekme.url, baslik: sekme.baslik, olusturulma: Date.now() }, ...onceki.yerImleri];
-      return { ...onceki, yerImleri };
-    });
-  }, []);
-
-  const yerImiSil = useCallback((id: string) => durumAyarla((onceki) => ({ ...onceki, yerImleri: onceki.yerImleri.filter((item) => item.id !== id) })), []);
-  const gecmisiTemizle = useCallback(() => durumAyarla((onceki) => ({ ...onceki, gecmis: [] })), []);
-  const ayariDegistir = useCallback(<K extends keyof TarayiciAyarlari>(anahtar: K, deger: TarayiciAyarlari[K]) => durumAyarla((onceki) => ({ ...onceki, ayarlar: { ...onceki.ayarlar, [anahtar]: deger } })), []);
-
-  const sekmeGrubuOlustur = useCallback((ad: string, sekmeId?: string) => {
-    durumAyarla((onceki) => {
-      const yeniGrup: SekmeGrubu = { id: benzersizKimlik("grup"), ad: ad.trim().slice(0, 28) || "Yeni grup", renk: ["#FF6A2A", "#7AA6FF", "#A981FF", "#27D17F"][onceki.sekmeGruplari.length % 4], olusturulma: Date.now() };
-      const hedefId = sekmeId ?? onceki.etkinSekmeId;
-      return { ...onceki, sekmeGruplari: [...onceki.sekmeGruplari, yeniGrup], sekmeler: onceki.sekmeler.map((sekme) => sekme.id === hedefId ? { ...sekme, grupId: yeniGrup.id } : sekme) };
-    });
-  }, []);
-
-  const sekmeyiGrubaEkle = useCallback((sekmeId: string, grupId?: string) => durumAyarla((onceki) => ({ ...onceki, sekmeler: onceki.sekmeler.map((sekme) => sekme.id === sekmeId ? { ...sekme, grupId } : sekme) })), []);
-  const sekmeGrubunuSil = useCallback((grupId: string) => durumAyarla((onceki) => ({ ...onceki, sekmeGruplari: onceki.sekmeGruplari.filter((grup) => grup.id !== grupId), sekmeler: onceki.sekmeler.map((sekme) => sekme.grupId === grupId ? { ...sekme, grupId: undefined } : sekme) })), []);
-  const sekmeyiSabitle = useCallback((sekmeId: string) => durumAyarla((onceki) => ({ ...onceki, sekmeler: onceki.sekmeler.map((sekme) => sekme.id === sekmeId ? { ...sekme, sabitlenmis: !sekme.sabitlenmis } : sekme) })), []);
-  const sekmeyiUyut = useCallback((sekmeId: string) => durumAyarla((onceki) => ({ ...onceki, sekmeler: onceki.sekmeler.map((sekme) => sekme.id === sekmeId ? { ...sekme, uyuyor: !sekme.uyuyor } : sekme) })), []);
-  const kapatilanSekmeyiGeriAc = useCallback((id: string) => durumAyarla((onceki) => {
-    const kayit = onceki.kapatilanSekmeler.find((item) => item.id === id);
-    if (!kayit) return onceki;
-    return { ...onceki, kapatilanSekmeler: onceki.kapatilanSekmeler.filter((item) => item.id !== id), sekmeler: [{ ...kayit.sekme, id: benzersizKimlik("sekme"), sonErisim: Date.now(), uyuyor: false }, ...onceki.sekmeler], etkinSekmeId: kayit.sekme.id };
-  }), []);
-  const okumaListesineEkle = useCallback(() => durumAyarla((onceki) => {
-    const sekme = onceki.sekmeler.find((item) => item.id === onceki.etkinSekmeId);
-    if (!sekme || sekme.url === YENI_SEKME_URL || sekme.tur === "gizli" || onceki.okumaListesi.some((item) => item.url === sekme.url)) return onceki;
-    return { ...onceki, okumaListesi: [{ id: benzersizKimlik("okuma"), url: sekme.url, baslik: sekme.baslik, olusturulma: Date.now() }, ...onceki.okumaListesi] };
-  }), []);
-  const okumaListesindenSil = useCallback((id: string) => durumAyarla((onceki) => ({ ...onceki, okumaListesi: onceki.okumaListesi.filter((item) => item.id !== id) })), []);
-  const taramaVerileriniTemizle = useCallback(() => durumAyarla((onceki) => ({ ...onceki, gecmis: [], yerImleri: [], okumaListesi: [], kapatilanSekmeler: [] })), []);
-
-  const sayfaMetniniKaydet = useCallback((id: string, metin: string, baslik?: string) => {
-    const temiz = metin.replace(/\s+/g, " ").trim().slice(0, 24000);
-    durumAyarla((onceki) => ({ ...onceki, sekmeler: onceki.sekmeler.map((sekme) => sekme.id === id ? { ...sekme, sayfaMetni: temiz, baslik: baslik?.trim() || sekme.baslik } : sekme) }));
-  }, []);
-
-  const engellenenIstekEkle = useCallback((adet = 1) => durumAyarla((onceki) => ({ ...onceki, engellenenIstekSayisi: onceki.engellenenIstekSayisi + Math.max(1, adet) })), []);
-
-  const indirmeGuncelle = useCallback((id: string, degisiklik: Partial<IndirmeGorevi>) => {
-    durumAyarla((onceki) => ({ ...onceki, indirmeler: onceki.indirmeler.map((gorev) => gorev.id === id ? { ...gorev, ...degisiklik } : gorev) }));
-  }, []);
-
-  const indirmeBaslat = useCallback(async (url: string, dosyaAdi?: string, mimeTuru?: string) => {
-    const gorev = { ...yeniIndirme(url, dosyaAdi), mimeTuru };
-    durumAyarla((onceki) => ({ ...onceki, indirmeler: [gorev, ...onceki.indirmeler] }));
-    try {
-      const sonuc = await dosyaIndirmesiniBaslat(gorev, (indirilenBayt, toplamBayt) => indirmeGuncelle(gorev.id, { indirilenBayt, toplamBayt }));
-      indirmeGuncelle(gorev.id, { ...sonuc, durum: "tamamlandi", hata: undefined, resumeVerisi: undefined });
-    } catch (hata) {
-      if (indirmeDuraklatildiMi(gorev.id)) return;
-      indirmeGuncelle(gorev.id, { durum: "basarisiz", hata: hata instanceof Error ? hata.message : "İndirme tamamlanamadı." });
-    }
-  }, [indirmeGuncelle]);
-
-  const indirmeDuraklat = useCallback(async (id: string) => {
-    try {
-      const resumeVerisi = await dosyaIndirmesiniDuraklat(id);
-      indirmeGuncelle(id, { durum: "duraklatildi", resumeVerisi });
-    } catch (hata) {
-      indirmeGuncelle(id, { durum: "basarisiz", hata: hata instanceof Error ? hata.message : "İndirme duraklatılamadı." });
-    }
-  }, [indirmeGuncelle]);
-
-  const indirmeyeDevam = useCallback(async (id: string) => {
-    const gorev = durum.indirmeler.find((item) => item.id === id);
-    if (!gorev) return;
-    indirmeGuncelle(id, { durum: "indiriliyor", hata: undefined });
-    try {
-      const sonuc = await dosyaIndirmesiniBaslat(gorev, (indirilenBayt, toplamBayt) => indirmeGuncelle(id, { indirilenBayt, toplamBayt }), gorev.resumeVerisi);
-      indirmeGuncelle(id, { ...sonuc, durum: "tamamlandi", resumeVerisi: undefined });
-    } catch (hata) {
-      indirmeGuncelle(id, { durum: "basarisiz", hata: hata instanceof Error ? hata.message : "İndirmeye devam edilemedi." });
-    }
-  }, [durum.indirmeler, indirmeGuncelle]);
-
-  const indirmePaylas = useCallback(async (id: string) => {
-    const gorev = durum.indirmeler.find((item) => item.id === id);
-    if (!gorev?.hedefUri) return;
-    try { await indirilenDosyayiPaylas(gorev.hedefUri, gorev.mimeTuru); }
-    catch (hata) { indirmeGuncelle(id, { hata: hata instanceof Error ? hata.message : "Dosya paylaşılamadı." }); }
-  }, [durum.indirmeler, indirmeGuncelle]);
-
-  const indirmeSil = useCallback(async (id: string) => {
-    const gorev = durum.indirmeler.find((item) => item.id === id);
-    await indirilenDosyayiSil(gorev?.hedefUri);
-    durumAyarla((onceki) => ({ ...onceki, indirmeler: onceki.indirmeler.filter((item) => item.id !== id) }));
-  }, [durum.indirmeler]);
-
-  const deger = useMemo<TarayiciBaglamiDegeri>(() => ({ durum, yuklendi, etkinSekme, sekmeAc, sekmeKapat, etkinSekmeyiDegistir, sayfayaGit, yukleniyorAyarla, yerImiDegistir, yerImiSil, gecmisiTemizle, ayariDegistir, sayfaMetniniKaydet, engellenenIstekEkle, indirmeBaslat, indirmeDuraklat, indirmeyeDevam, indirmePaylas, indirmeSil, sekmeGrubuOlustur, sekmeyiGrubaEkle, sekmeGrubunuSil, sekmeyiSabitle, sekmeyiUyut, kapatilanSekmeyiGeriAc, okumaListesineEkle, okumaListesindenSil, taramaVerileriniTemizle }), [ayariDegistir, durum, etkinSekme, etkinSekmeyiDegistir, engellenenIstekEkle, gecmisiTemizle, indirmeBaslat, indirmeDuraklat, indirmePaylas, indirmeSil, indirmeyeDevam, kapatilanSekmeyiGeriAc, okumaListesineEkle, okumaListesindenSil, sayfaMetniniKaydet, sekmeAc, sekmeGrubuOlustur, sekmeGrubunuSil, sekmeKapat, sekmeyiGrubaEkle, sekmeyiSabitle, sekmeyiUyut, sayfayaGit, taramaVerileriniTemizle, yerImiDegistir, yerImiSil, yuklendi, yukleniyorAyarla]);
+  const sekmeAc = useCallback((girdi?: string, tur: SekmeTuru = "normal") => durumAyarla((onceki) => { const sekme = yeniSekme(girdi, tur, onceki.ayarlar.aramaMotoru); return { ...onceki, sekmeler: [sekme, ...onceki.sekmeler], etkinSekmeId: sekme.id }; }), []);
+  const sekmeKapat = useCallback((id: string) => durumAyarla((onceki) => { const kapanan = onceki.sekmeler.find((sekme) => sekme.id === id); if (onceki.sekmeler.length === 1) { const sekme = yeniSekme(); return { ...onceki, sekmeler: [sekme], etkinSekmeId: sekme.id }; } const sekmeler = onceki.sekmeler.filter((sekme) => sekme.id !== id); const kapatilan = kapanan && kapanan.tur === "normal" ? [{ id: benzersizKimlik("kapatilan"), sekme: kapanan, kapanmaZamani: Date.now() }, ...onceki.kapatilanSekmeler].slice(0, 20) : onceki.kapatilanSekmeler; return { ...onceki, sekmeler, kapatilanSekmeler: kapatilan, etkinSekmeId: onceki.etkinSekmeId === id ? sekmeler[0].id : onceki.etkinSekmeId }; }), []);
+  const etkinSekmeyiDegistir = useCallback((id: string) => durumAyarla((onceki) => ({ ...onceki, etkinSekmeId: id, sekmeler: onceki.sekmeler.map((sekme) => sekme.id === id ? { ...sekme, sonErisim: Date.now(), uyuyor: false } : sekme) })), []);
+  const sayfayaGit = useCallback((id: string, url: string, baslik?: string) => { if (url === YENI_SEKME_URL) return; durumAyarla((onceki) => { const hedef = onceki.sekmeler.find((sekme) => sekme.id === id); if (!hedef) return onceki; const yeniBaslik = baslik?.trim() || urlBasligi(url); const tekrar = onceki.gecmis[0]?.url === url && onceki.gecmis[0]?.baslik === yeniBaslik; const gecmis: GecmisKaydi[] = hedef.tur === "gizli" || tekrar ? onceki.gecmis : [{ id: benzersizKimlik("gecmis"), url, baslik: yeniBaslik, ziyaretZamani: Date.now() }, ...onceki.gecmis].slice(0, 150); return { ...onceki, gecmis, sekmeler: onceki.sekmeler.map((sekme) => sekme.id === id ? { ...sekme, url, baslik: yeniBaslik, sonErisim: Date.now(), yukleniyor: false } : sekme) }; }); }, []);
+  const yukleniyorAyarla = useCallback((id: string, yukleniyor: boolean) => durumAyarla((onceki) => ({ ...onceki, sekmeler: onceki.sekmeler.map((sekme) => sekme.id === id ? { ...sekme, yukleniyor } : sekme) })), []);
+  const yerImiDegistir = useCallback(() => durumAyarla((onceki) => { const sekme = onceki.sekmeler.find((item) => item.id === onceki.etkinSekmeId); if (!sekme || sekme.url === YENI_SEKME_URL) return onceki; const mevcut = onceki.yerImleri.find((item) => item.url === sekme.url); const yerImleri: YerImi[] = mevcut ? onceki.yerImleri.filter((item) => item.id !== mevcut.id) : [{ id: benzersizKimlik("yer-imi"), url: sekme.url, baslik: sekme.baslik, olusturulma: Date.now() }, ...onceki.yerImleri]; return { ...onceki, yerImleri }; }), []);
+  const yerImiSil = useCallback((id: string) => durumAyarla((onceki) => ({ ...onceki, yerImleri: onceki.yerImleri.filter((item) => item.id !== id) })), []); const gecmisiTemizle = useCallback(() => durumAyarla((onceki) => ({ ...onceki, gecmis: [] })), []); const ayariDegistir = useCallback(<K extends keyof TarayiciAyarlari>(anahtar: K, deger: TarayiciAyarlari[K]) => durumAyarla((onceki) => ({ ...onceki, ayarlar: { ...onceki.ayarlar, [anahtar]: deger } })), []);
+  const sekmeGrubuOlustur = useCallback((ad: string, sekmeId?: string) => durumAyarla((onceki) => { const grup: SekmeGrubu = { id: benzersizKimlik("grup"), ad: ad.trim().slice(0, 28) || "Yeni grup", renk: ["#FF6A2A", "#7AA6FF", "#A981FF", "#27D17F"][onceki.sekmeGruplari.length % 4], olusturulma: Date.now() }; const hedef = sekmeId ?? onceki.etkinSekmeId; return { ...onceki, sekmeGruplari: [...onceki.sekmeGruplari, grup], sekmeler: onceki.sekmeler.map((sekme) => sekme.id === hedef ? { ...sekme, grupId: grup.id } : sekme) }; }), []);
+  const sekmeGrubunuGuncelle = useCallback((id: string, degisiklik: Pick<SekmeGrubu, "ad" | "renk">) => durumAyarla((onceki) => ({ ...onceki, sekmeGruplari: onceki.sekmeGruplari.map((grup) => grup.id === id ? { ...grup, ad: degisiklik.ad.trim().slice(0, 28) || grup.ad, renk: degisiklik.renk } : grup) })), []); const sekmeyiGrubaEkle = useCallback((sekmeId: string, grupId?: string) => durumAyarla((onceki) => ({ ...onceki, sekmeler: onceki.sekmeler.map((sekme) => sekme.id === sekmeId ? { ...sekme, grupId } : sekme) })), []); const sekmeGrubunuSil = useCallback((grupId: string) => durumAyarla((onceki) => ({ ...onceki, sekmeGruplari: onceki.sekmeGruplari.filter((grup) => grup.id !== grupId), sekmeler: onceki.sekmeler.map((sekme) => sekme.grupId === grupId ? { ...sekme, grupId: undefined } : sekme) })), []);
+  const sekmeleriSirala = useCallback((idler: string[]) => durumAyarla((onceki) => { const secilen = new Set(idler); const sirali = idler.map((id) => onceki.sekmeler.find((sekme) => sekme.id === id)).filter((sekme): sekme is Sekme => Boolean(sekme)); let indeks = 0; return { ...onceki, sekmeler: onceki.sekmeler.map((sekme) => secilen.has(sekme.id) ? (sirali[indeks++] || sekme) : sekme) }; }), []); const sekmeyiSabitle = useCallback((id: string) => durumAyarla((onceki) => ({ ...onceki, sekmeler: onceki.sekmeler.map((sekme) => sekme.id === id ? { ...sekme, sabitlenmis: !sekme.sabitlenmis } : sekme) })), []); const sekmeyiUyut = useCallback((id: string) => durumAyarla((onceki) => ({ ...onceki, sekmeler: onceki.sekmeler.map((sekme) => sekme.id === id ? { ...sekme, uyuyor: !sekme.uyuyor } : sekme) })), []);
+  const kapatilanSekmeyiGeriAc = useCallback((id: string) => durumAyarla((onceki) => { const kayit = onceki.kapatilanSekmeler.find((item) => item.id === id); if (!kayit) return onceki; const sekme = { ...kayit.sekme, id: benzersizKimlik("sekme"), sonErisim: Date.now(), uyuyor: false }; return { ...onceki, kapatilanSekmeler: onceki.kapatilanSekmeler.filter((item) => item.id !== id), sekmeler: [sekme, ...onceki.sekmeler], etkinSekmeId: sekme.id }; }), []);
+  const okumaListesineEkle = useCallback(() => durumAyarla((onceki) => { const sekme = onceki.sekmeler.find((item) => item.id === onceki.etkinSekmeId); if (!sekme || sekme.url === YENI_SEKME_URL || sekme.tur === "gizli" || onceki.okumaListesi.some((item) => item.url === sekme.url)) return onceki; return { ...onceki, okumaListesi: [{ id: benzersizKimlik("okuma"), url: sekme.url, baslik: sekme.baslik, olusturulma: Date.now() }, ...onceki.okumaListesi] }; }), []); const okumaListesindenSil = useCallback((id: string) => durumAyarla((onceki) => ({ ...onceki, okumaListesi: onceki.okumaListesi.filter((item) => item.id !== id) })), []);
+  const notEkle = useCallback((url: string, metin: string) => { const temiz = metin.trim().slice(0, 1600); if (!temiz || !url.startsWith("http")) return; durumAyarla((onceki) => ({ ...onceki, sayfaNotlari: [{ id: benzersizKimlik("not"), url, metin: temiz, olusturulma: Date.now(), guncellenme: Date.now() }, ...onceki.sayfaNotlari].slice(0, 300) })); }, []); const notuGuncelle = useCallback((id: string, metin: string) => durumAyarla((onceki) => ({ ...onceki, sayfaNotlari: onceki.sayfaNotlari.map((not) => not.id === id ? { ...not, metin: metin.trim() || not.metin, guncellenme: Date.now() } : not) })), []); const notSil = useCallback((id: string) => durumAyarla((onceki) => ({ ...onceki, sayfaNotlari: onceki.sayfaNotlari.filter((not) => not.id !== id) })), []);
+  const vurguEkle = useCallback((url: string, metin: string, renk = "#F7D65C") => { const temiz = metin.replace(/\s+/g, " ").trim().slice(0, 520); if (!temiz || !url.startsWith("http")) return; durumAyarla((onceki) => onceki.sayfaVurgulari.some((vurgu) => vurgu.url === url && vurgu.seciliMetin === temiz) ? onceki : ({ ...onceki, sayfaVurgulari: [{ id: benzersizKimlik("vurgu"), url, seciliMetin: temiz, renk, olusturulma: Date.now() }, ...onceki.sayfaVurgulari].slice(0, 300) })); }, []); const vurguSil = useCallback((id: string) => durumAyarla((onceki) => ({ ...onceki, sayfaVurgulari: onceki.sayfaVurgulari.filter((vurgu) => vurgu.id !== id) })), []);
+  const siteIzniAyarla = useCallback((alan: string, degisiklik: Partial<Omit<SiteIzni, "alan" | "guncellenme">>) => { const temiz = alanAdiCikar(`https://${alan}`); if (!temiz) return; durumAyarla((onceki) => { const mevcut = onceki.siteIzinleri.find((izin) => izin.alan === temiz); const izin: SiteIzni = { alan: temiz, kamera: false, mikrofon: false, konum: false, bildirim: false, guncellenme: Date.now(), ...mevcut, ...degisiklik }; return { ...onceki, siteIzinleri: mevcut ? onceki.siteIzinleri.map((item) => item.alan === temiz ? izin : item) : [izin, ...onceki.siteIzinleri] }; }); }, []);
+  const hizliErisimEkle = useCallback((oge: Omit<HizliErisimOgesi, "id">) => { if (!oge.ad.trim() || !oge.url.trim()) return; durumAyarla((onceki) => ({ ...onceki, ayarlar: { ...onceki.ayarlar, hizliErisimler: [...onceki.ayarlar.hizliErisimler, { ...oge, id: benzersizKimlik("hizli"), ad: oge.ad.trim().slice(0, 20), url: oge.url.trim() }].slice(0, 12) } })); }, []); const hizliErisimGuncelle = useCallback((id: string, oge: Omit<HizliErisimOgesi, "id">) => durumAyarla((onceki) => ({ ...onceki, ayarlar: { ...onceki.ayarlar, hizliErisimler: onceki.ayarlar.hizliErisimler.map((item) => item.id === id ? { ...item, ...oge, ad: oge.ad.trim().slice(0, 20), url: oge.url.trim() } : item) } })), []); const hizliErisimSil = useCallback((id: string) => durumAyarla((onceki) => ({ ...onceki, ayarlar: { ...onceki.ayarlar, hizliErisimler: onceki.ayarlar.hizliErisimler.filter((item) => item.id !== id) } })), []); const hizliErisimleriSirala = useCallback((idler: string[]) => durumAyarla((onceki) => ({ ...onceki, ayarlar: { ...onceki.ayarlar, hizliErisimler: idler.map((id) => onceki.ayarlar.hizliErisimler.find((item) => item.id === id)).filter((item): item is HizliErisimOgesi => Boolean(item)) } })), []);
+  const aramaOnerisiEkle = useCallback((metin: string) => { const temiz = metin.trim().replace(/\s+/g, " ").slice(0, 100); if (!temiz || /^[a-z]+:\/\//i.test(temiz) || /^[\w-]+\.[\w.-]+/i.test(temiz)) return; durumAyarla((onceki) => ({ ...onceki, ayarlar: { ...onceki.ayarlar, aramaOneriGecmisi: [temiz, ...onceki.ayarlar.aramaOneriGecmisi.filter((item) => item.toLocaleLowerCase("tr-TR") !== temiz.toLocaleLowerCase("tr-TR"))].slice(0, 12) } })); }, []);
+  const taramaVerileriniTemizle = useCallback(() => durumAyarla((onceki) => ({ ...onceki, gecmis: [], yerImleri: [], okumaListesi: [], kapatilanSekmeler: [], sayfaNotlari: [], sayfaVurgulari: [], tasarrufEdilenBayt: 0, ayarlar: { ...onceki.ayarlar, aramaOneriGecmisi: [] } })), []);
+  const sayfaMetniniKaydet = useCallback((id: string, metin: string, baslik?: string) => { const temiz = metin.replace(/\s+/g, " ").trim().slice(0, 24000); durumAyarla((onceki) => ({ ...onceki, sekmeler: onceki.sekmeler.map((sekme) => sekme.id === id ? { ...sekme, sayfaMetni: temiz, baslik: baslik?.trim() || sekme.baslik } : sekme) })); }, []); const engellenenIstekEkle = useCallback((adet = 1) => durumAyarla((onceki) => ({ ...onceki, engellenenIstekSayisi: onceki.engellenenIstekSayisi + Math.max(1, adet) })), []); const tasarrufEkle = useCallback((bayt = 0) => durumAyarla((onceki) => ({ ...onceki, tasarrufEdilenBayt: onceki.tasarrufEdilenBayt + Math.max(0, bayt) })), []);
+  const indirmeGuncelle = useCallback((id: string, degisiklik: Partial<IndirmeGorevi>) => durumAyarla((onceki) => ({ ...onceki, indirmeler: onceki.indirmeler.map((gorev) => gorev.id === id ? { ...gorev, ...degisiklik } : gorev) })), []); const indirmeBaslat = useCallback(async (url: string, dosyaAdi?: string, mimeTuru?: string) => { const gorev = yeniIndirme(url, dosyaAdi, mimeTuru); durumAyarla((onceki) => ({ ...onceki, indirmeler: [gorev, ...onceki.indirmeler] })); try { const sonuc = await dosyaIndirmesiniBaslat(gorev, (indirilenBayt, toplamBayt) => indirmeGuncelle(gorev.id, { indirilenBayt, toplamBayt })); indirmeGuncelle(gorev.id, { ...sonuc, durum: "tamamlandi", hata: undefined, resumeVerisi: undefined }); } catch (hata) { if (!indirmeDuraklatildiMi(gorev.id)) indirmeGuncelle(gorev.id, { durum: "basarisiz", hata: hata instanceof Error ? hata.message : "İndirme tamamlanamadı." }); } }, [indirmeGuncelle]); const indirmeDuraklat = useCallback(async (id: string) => { try { indirmeGuncelle(id, { durum: "duraklatildi", resumeVerisi: await dosyaIndirmesiniDuraklat(id) }); } catch (hata) { indirmeGuncelle(id, { durum: "basarisiz", hata: hata instanceof Error ? hata.message : "İndirme duraklatılamadı." }); } }, [indirmeGuncelle]); const indirmeyeDevam = useCallback(async (id: string) => { const gorev = durum.indirmeler.find((item) => item.id === id); if (!gorev) return; indirmeGuncelle(id, { durum: "indiriliyor", hata: undefined }); try { const sonuc = await dosyaIndirmesiniBaslat(gorev, (indirilenBayt, toplamBayt) => indirmeGuncelle(id, { indirilenBayt, toplamBayt }), gorev.resumeVerisi); indirmeGuncelle(id, { ...sonuc, durum: "tamamlandi", resumeVerisi: undefined }); } catch (hata) { indirmeGuncelle(id, { durum: "basarisiz", hata: hata instanceof Error ? hata.message : "İndirmeye devam edilemedi." }); } }, [durum.indirmeler, indirmeGuncelle]); const indirmePaylas = useCallback(async (id: string) => { const gorev = durum.indirmeler.find((item) => item.id === id); if (!gorev?.hedefUri) return; try { await indirilenDosyayiPaylas(gorev.hedefUri, gorev.mimeTuru); } catch (hata) { indirmeGuncelle(id, { hata: hata instanceof Error ? hata.message : "Dosya paylaşılamadı." }); } }, [durum.indirmeler, indirmeGuncelle]); const indirmeSil = useCallback(async (id: string) => { const gorev = durum.indirmeler.find((item) => item.id === id); await indirilenDosyayiSil(gorev?.hedefUri); durumAyarla((onceki) => ({ ...onceki, indirmeler: onceki.indirmeler.filter((item) => item.id !== id) })); }, [durum.indirmeler]);
+  const deger = useMemo<TarayiciBaglamiDegeri>(() => ({ durum, yuklendi, etkinSekme, sekmeAc, sekmeKapat, etkinSekmeyiDegistir, sayfayaGit, yukleniyorAyarla, yerImiDegistir, yerImiSil, gecmisiTemizle, ayariDegistir, sayfaMetniniKaydet, engellenenIstekEkle, tasarrufEkle, indirmeBaslat, indirmeDuraklat, indirmeyeDevam, indirmePaylas, indirmeSil, sekmeGrubuOlustur, sekmeGrubunuGuncelle, sekmeyiGrubaEkle, sekmeGrubunuSil, sekmeleriSirala, sekmeyiSabitle, sekmeyiUyut, kapatilanSekmeyiGeriAc, okumaListesineEkle, okumaListesindenSil, notEkle, notuGuncelle, notSil, vurguEkle, vurguSil, siteIzniAyarla, hizliErisimEkle, hizliErisimGuncelle, hizliErisimSil, hizliErisimleriSirala, aramaOnerisiEkle, taramaVerileriniTemizle }), [aramaOnerisiEkle, ayariDegistir, durum, etkinSekme, etkinSekmeyiDegistir, engellenenIstekEkle, gecmisiTemizle, hizliErisimEkle, hizliErisimGuncelle, hizliErisimSil, hizliErisimleriSirala, indirmeBaslat, indirmeDuraklat, indirmePaylas, indirmeSil, indirmeyeDevam, kapatilanSekmeyiGeriAc, notEkle, notSil, notuGuncelle, okumaListesineEkle, okumaListesindenSil, sayfaMetniniKaydet, sekmeAc, sekmeGrubuOlustur, sekmeGrubunuGuncelle, sekmeGrubunuSil, sekmeKapat, sekmeleriSirala, sekmeyiGrubaEkle, sekmeyiSabitle, sekmeyiUyut, sayfayaGit, siteIzniAyarla, taramaVerileriniTemizle, tasarrufEkle, vurguEkle, vurguSil, yerImiDegistir, yerImiSil, yukleniyorAyarla]);
   return <TarayiciBaglami.Provider value={deger}>{children}</TarayiciBaglami.Provider>;
 }
-
-export function useTarayici() {
-  const baglam = useContext(TarayiciBaglami);
-  if (!baglam) throw new Error("useTarayici yalnızca TarayiciSaglayici içinde kullanılabilir.");
-  return baglam;
-}
+export function useTarayici() { const baglam = useContext(TarayiciBaglami); if (!baglam) throw new Error("useTarayici yalnızca TarayiciSaglayici içinde kullanılabilir."); return baglam; }
