@@ -36,3 +36,5 @@
 - [x] WebView içi reklam/takip engelleme, indirme yöneticisi ve AI araçlarını gerçek servislerle bağlamak
 - [x] İlk açılışta görsel arka plan, arama alanı, AI/gizli mod kısayolları, hızlı erişim ve Akrep güvenlik kartı içeren yeni sekme arayüzünü uygulamak
 - [x] Paket güncellemesi sonrası duran geliştirme sunucusunu yeniden başlatıp AI uç noktasını doğrulamak
+- [x] Sekmeler, yer imleri, geçmiş ve ayarları alt çubuktan kaldırıp üç nokta işlem menüsüne taşımak
+- [x] Ana sayfa yazılarını, kartlarını ve boşluklarını daha kompakt mobil ölçeğe ayarlamak
