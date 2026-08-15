@@ -27,3 +27,12 @@
 - [x] A+B Akrep Cam ve sade gezinme tasarım yönünü uygulamak
 - [x] Uygulama ikonlarını checkpoint boyut sınırına uygun olarak optimize etmek
 - [x] Checkpoint sonrası değişen uzak depoyu GitHub'a geri bağlayıp optimize ikonları push etmek
+- [ ] Kalıcı WireGuard gateway ve Android yerel VPN servis mimarisini kurmak
+- [x] Gerçek reklam/takip engelleme motoru ve kural güncelleme akışını uygulamak
+- [x] Gerçek indirme yöneticisi, ilerleme, duraklatma ve dosya doğrulamasını uygulamak
+- [x] Kullanıcı izinli AI özetleme, çeviri ve sayfa sorusu backend entegrasyonunu kurmak
+- [x] Gerçek servisler için güvenlik, leak, ağ ve uçtan uca testleri tamamlamak
+- [x] VPN'siz modda VPN ekranını açık sınırlama ve gerçek bağlantı yapılandırması olarak güncellemek
+- [x] WebView içi reklam/takip engelleme, indirme yöneticisi ve AI araçlarını gerçek servislerle bağlamak
+- [x] İlk açılışta görsel arka plan, arama alanı, AI/gizli mod kısayolları, hızlı erişim ve Akrep güvenlik kartı içeren yeni sekme arayüzünü uygulamak
+- [x] Paket güncellemesi sonrası duran geliştirme sunucusunu yeniden başlatıp AI uç noktasını doğrulamak

@@ -1,11 +1,12 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createContext, PropsWithChildren, useCallback, useContext, useEffect, useMemo, useState } from "react";
 
-import { benzersizKimlik, GecmisKaydi, Sekme, SekmeTuru, TarayiciAyarlari, TarayiciDurumu, urlBasligi, varsayilanAyarlar, YerImi, yeniSekme, YENI_SEKME_URL } from "./modeller";
+import { benzersizKimlik, GecmisKaydi, IndirmeGorevi, Sekme, SekmeTuru, TarayiciAyarlari, TarayiciDurumu, urlBasligi, varsayilanAyarlar, YerImi, yeniIndirme, yeniSekme, YENI_SEKME_URL } from "./modeller";
+import { dosyaIndirmesiniBaslat, dosyaIndirmesiniDuraklat, indirmeDuraklatildiMi, indirilenDosyayiPaylas, indirilenDosyayiSil } from "./indirme-yoneticisi";
 
 const DEPOLAMA_ANAHTARI = "akrep-tarayici-v1";
 const ilkSekme = yeniSekme();
-const baslangicDurumu: TarayiciDurumu = { sekmeler: [ilkSekme], etkinSekmeId: ilkSekme.id, yerImleri: [], gecmis: [], ayarlar: varsayilanAyarlar };
+const baslangicDurumu: TarayiciDurumu = { sekmeler: [ilkSekme], etkinSekmeId: ilkSekme.id, yerImleri: [], gecmis: [], ayarlar: varsayilanAyarlar, indirmeler: [], engellenenIstekSayisi: 0 };
 
 interface TarayiciBaglamiDegeri {
   durum: TarayiciDurumu;
@@ -20,6 +21,13 @@ interface TarayiciBaglamiDegeri {
   yerImiSil: (id: string) => void;
   gecmisiTemizle: () => void;
   ayariDegistir: <K extends keyof TarayiciAyarlari>(anahtar: K, deger: TarayiciAyarlari[K]) => void;
+  sayfaMetniniKaydet: (id: string, metin: string, baslik?: string) => void;
+  engellenenIstekEkle: (adet?: number) => void;
+  indirmeBaslat: (url: string, dosyaAdi?: string, mimeTuru?: string) => Promise<void>;
+  indirmeDuraklat: (id: string) => Promise<void>;
+  indirmeyeDevam: (id: string) => Promise<void>;
+  indirmePaylas: (id: string) => Promise<void>;
+  indirmeSil: (id: string) => Promise<void>;
 }
 
 const TarayiciBaglami = createContext<TarayiciBaglamiDegeri | null>(null);
@@ -33,7 +41,7 @@ export function TarayiciSaglayici({ children }: PropsWithChildren) {
     AsyncStorage.getItem(DEPOLAMA_ANAHTARI).then((hamVeri) => {
       if (!etkin || !hamVeri) return;
       const kayitliDurum = JSON.parse(hamVeri) as TarayiciDurumu;
-      if (kayitliDurum.sekmeler?.length) durumAyarla({ ...kayitliDurum, ayarlar: { ...varsayilanAyarlar, ...kayitliDurum.ayarlar } });
+      if (kayitliDurum.sekmeler?.length) durumAyarla({ ...baslangicDurumu, ...kayitliDurum, ayarlar: { ...varsayilanAyarlar, ...kayitliDurum.ayarlar }, indirmeler: kayitliDurum.indirmeler ?? [], engellenenIstekSayisi: kayitliDurum.engellenenIstekSayisi ?? 0 });
     }).catch(() => {
       // Yerel depolama okunamazsa güvenli başlangıç durumu korunur.
     }).finally(() => { if (etkin) yuklendiAyarla(true); });
@@ -99,7 +107,64 @@ export function TarayiciSaglayici({ children }: PropsWithChildren) {
   const gecmisiTemizle = useCallback(() => durumAyarla((onceki) => ({ ...onceki, gecmis: [] })), []);
   const ayariDegistir = useCallback(<K extends keyof TarayiciAyarlari>(anahtar: K, deger: TarayiciAyarlari[K]) => durumAyarla((onceki) => ({ ...onceki, ayarlar: { ...onceki.ayarlar, [anahtar]: deger } })), []);
 
-  const deger = useMemo<TarayiciBaglamiDegeri>(() => ({ durum, yuklendi, etkinSekme, sekmeAc, sekmeKapat, etkinSekmeyiDegistir, sayfayaGit, yukleniyorAyarla, yerImiDegistir, yerImiSil, gecmisiTemizle, ayariDegistir }), [ayariDegistir, durum, etkinSekme, etkinSekmeyiDegistir, gecmisiTemizle, sekmeAc, sekmeKapat, sayfayaGit, yerImiDegistir, yerImiSil, yuklendi, yukleniyorAyarla]);
+  const sayfaMetniniKaydet = useCallback((id: string, metin: string, baslik?: string) => {
+    const temiz = metin.replace(/\s+/g, " ").trim().slice(0, 24000);
+    durumAyarla((onceki) => ({ ...onceki, sekmeler: onceki.sekmeler.map((sekme) => sekme.id === id ? { ...sekme, sayfaMetni: temiz, baslik: baslik?.trim() || sekme.baslik } : sekme) }));
+  }, []);
+
+  const engellenenIstekEkle = useCallback((adet = 1) => durumAyarla((onceki) => ({ ...onceki, engellenenIstekSayisi: onceki.engellenenIstekSayisi + Math.max(1, adet) })), []);
+
+  const indirmeGuncelle = useCallback((id: string, degisiklik: Partial<IndirmeGorevi>) => {
+    durumAyarla((onceki) => ({ ...onceki, indirmeler: onceki.indirmeler.map((gorev) => gorev.id === id ? { ...gorev, ...degisiklik } : gorev) }));
+  }, []);
+
+  const indirmeBaslat = useCallback(async (url: string, dosyaAdi?: string, mimeTuru?: string) => {
+    const gorev = { ...yeniIndirme(url, dosyaAdi), mimeTuru };
+    durumAyarla((onceki) => ({ ...onceki, indirmeler: [gorev, ...onceki.indirmeler] }));
+    try {
+      const sonuc = await dosyaIndirmesiniBaslat(gorev, (indirilenBayt, toplamBayt) => indirmeGuncelle(gorev.id, { indirilenBayt, toplamBayt }));
+      indirmeGuncelle(gorev.id, { ...sonuc, durum: "tamamlandi", hata: undefined, resumeVerisi: undefined });
+    } catch (hata) {
+      if (indirmeDuraklatildiMi(gorev.id)) return;
+      indirmeGuncelle(gorev.id, { durum: "basarisiz", hata: hata instanceof Error ? hata.message : "İndirme tamamlanamadı." });
+    }
+  }, [indirmeGuncelle]);
+
+  const indirmeDuraklat = useCallback(async (id: string) => {
+    try {
+      const resumeVerisi = await dosyaIndirmesiniDuraklat(id);
+      indirmeGuncelle(id, { durum: "duraklatildi", resumeVerisi });
+    } catch (hata) {
+      indirmeGuncelle(id, { durum: "basarisiz", hata: hata instanceof Error ? hata.message : "İndirme duraklatılamadı." });
+    }
+  }, [indirmeGuncelle]);
+
+  const indirmeyeDevam = useCallback(async (id: string) => {
+    const gorev = durum.indirmeler.find((item) => item.id === id);
+    if (!gorev) return;
+    indirmeGuncelle(id, { durum: "indiriliyor", hata: undefined });
+    try {
+      const sonuc = await dosyaIndirmesiniBaslat(gorev, (indirilenBayt, toplamBayt) => indirmeGuncelle(id, { indirilenBayt, toplamBayt }), gorev.resumeVerisi);
+      indirmeGuncelle(id, { ...sonuc, durum: "tamamlandi", resumeVerisi: undefined });
+    } catch (hata) {
+      indirmeGuncelle(id, { durum: "basarisiz", hata: hata instanceof Error ? hata.message : "İndirmeye devam edilemedi." });
+    }
+  }, [durum.indirmeler, indirmeGuncelle]);
+
+  const indirmePaylas = useCallback(async (id: string) => {
+    const gorev = durum.indirmeler.find((item) => item.id === id);
+    if (!gorev?.hedefUri) return;
+    try { await indirilenDosyayiPaylas(gorev.hedefUri, gorev.mimeTuru); }
+    catch (hata) { indirmeGuncelle(id, { hata: hata instanceof Error ? hata.message : "Dosya paylaşılamadı." }); }
+  }, [durum.indirmeler, indirmeGuncelle]);
+
+  const indirmeSil = useCallback(async (id: string) => {
+    const gorev = durum.indirmeler.find((item) => item.id === id);
+    await indirilenDosyayiSil(gorev?.hedefUri);
+    durumAyarla((onceki) => ({ ...onceki, indirmeler: onceki.indirmeler.filter((item) => item.id !== id) }));
+  }, [durum.indirmeler]);
+
+  const deger = useMemo<TarayiciBaglamiDegeri>(() => ({ durum, yuklendi, etkinSekme, sekmeAc, sekmeKapat, etkinSekmeyiDegistir, sayfayaGit, yukleniyorAyarla, yerImiDegistir, yerImiSil, gecmisiTemizle, ayariDegistir, sayfaMetniniKaydet, engellenenIstekEkle, indirmeBaslat, indirmeDuraklat, indirmeyeDevam, indirmePaylas, indirmeSil }), [ayariDegistir, durum, etkinSekme, etkinSekmeyiDegistir, engellenenIstekEkle, gecmisiTemizle, indirmeBaslat, indirmeDuraklat, indirmePaylas, indirmeSil, indirmeyeDevam, sayfaMetniniKaydet, sekmeAc, sekmeKapat, sayfayaGit, yerImiDegistir, yerImiSil, yuklendi, yukleniyorAyarla]);
   return <TarayiciBaglami.Provider value={deger}>{children}</TarayiciBaglami.Provider>;
 }
 

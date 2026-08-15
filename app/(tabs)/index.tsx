@@ -1,27 +1,29 @@
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { router as expoRouter } from "expo-router";
 import { useMemo, useState } from "react";
-import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { FlatList, ImageBackground, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-import { BolumBasligi, CamKart, dokunsalGeriBildirim, SimgeliSatir, YuvarlakButon } from "@/bilesenler/akrep-ui";
+import { dokunsalGeriBildirim } from "@/bilesenler/akrep-ui";
 import { useTarayici } from "@/lib/tarayici/baglam";
-import { zamanEtiketi } from "@/lib/tarayici/modeller";
 
+const ARKA_PLAN = "/manus-storage/akrep-yeni-sekme-arka-plan_c72f368d.jpg";
 const router = { push: (rota: string) => expoRouter.push(rota as never) };
 
-const hizliBaglantilar = [
-  { id: "google", ad: "Google", url: "https://www.google.com", icon: "google" as const, renk: "#5B9DFF" },
-  { id: "youtube", ad: "YouTube", url: "https://www.youtube.com", icon: "youtube" as const, renk: "#FF4D5A" },
-  { id: "wikipedia", ad: "Wikipedia", url: "https://tr.wikipedia.org", icon: "book-open-page-variant-outline" as const, renk: "#A8B3C2" },
-  { id: "github", ad: "GitHub", url: "https://github.com", icon: "github" as const, renk: "#F6F8FB" },
+const hizliEylemler = [
+  { id: "yer-imleri", ad: "Yer imleri", icon: "star-outline" as const, rota: "/(tabs)/yer-imleri", renk: "#FFD166" },
+  { id: "gecmis", ad: "Geçmiş", icon: "history" as const, rota: "/(tabs)/gecmis", renk: "#9DBBFF" },
+  { id: "indirmeler", ad: "İndirmeler", icon: "download-outline" as const, rota: "/indirmeler", renk: "#6FE5B6" },
+  { id: "gizlilik", ad: "Gizlilik", icon: "shield-check-outline" as const, rota: "/gizlilik", renk: "#FF9F70" },
+  { id: "ayarlar", ad: "Ayarlar", icon: "cog-outline" as const, rota: "/(tabs)/ayarlar", renk: "#C5B4FF" },
 ];
 
 export default function AnaSayfa() {
   const { durum, sekmeAc } = useTarayici();
   const [girdi, girdiAyarla] = useState("");
   const korumaMetni = useMemo(() => {
-    const etkin = [durum.ayarlar.httpsZorunlu, durum.ayarlar.reklamEngelleme, durum.ayarlar.takipKoruma, durum.ayarlar.guvenliDns].filter(Boolean).length;
-    return `${etkin}/4 tercih etkin`;
+    const etkin = [durum.ayarlar.httpsZorunlu, durum.ayarlar.reklamEngelleme, durum.ayarlar.takipKoruma].filter(Boolean).length;
+    return `${etkin}/3 web koruması etkin`;
   }, [durum.ayarlar]);
 
   const aramayiBaslat = () => {
@@ -32,66 +34,139 @@ export default function AnaSayfa() {
     router.push("/tarayici");
   };
 
+  const gizliSekmeAc = () => {
+    dokunsalGeriBildirim("orta");
+    sekmeAc(undefined, "gizli");
+    router.push("/tarayici");
+  };
+
   return (
-    <View style={styles.ekran}>
-      <FlatList
-        contentContainerStyle={styles.icerik}
-        data={durum.gecmis.slice(0, 4)}
-        keyExtractor={(item) => item.id}
-        ListHeaderComponent={
-          <>
-            <View style={styles.ustAlan}>
-              <View><Text style={styles.marka}>AKREP</Text><Text style={styles.markaAlt}>Tarayıcı</Text></View>
-              <Pressable accessibilityLabel="Yeni gizli sekme aç" onPress={() => { sekmeAc(undefined, "gizli"); router.push("/tarayici"); }} style={({ pressed }) => [styles.gizliButon, pressed && styles.basili]}>
-                <MaterialCommunityIcons name="incognito" size={19} color="#FFB000" />
+    <ImageBackground source={{ uri: ARKA_PLAN }} resizeMode="cover" style={styles.ekran}>
+      <View style={styles.koyuKatman} />
+      <SafeAreaView edges={["top", "left", "right"]} style={styles.guvenliAlan}>
+        <View style={styles.ustCubuk}>
+          <Pressable accessibilityLabel="Akrep ana sayfa" onPress={() => expoRouter.replace("/(tabs)" as never)} style={({ pressed }) => [styles.ustSimge, pressed && styles.basili]}>
+            <MaterialCommunityIcons name="zodiac-scorpio" color="#FFFFFF" size={28} />
+          </Pressable>
+          <View style={styles.ustSag}>
+            <Pressable accessibilityLabel="Sekme merkezi" onPress={() => router.push("/(tabs)/sekmeler")} style={({ pressed }) => [styles.sekmeRozeti, pressed && styles.basili]}>
+              <Text style={styles.sekmeSayisi}>{durum.sekmeler.length}</Text>
+            </Pressable>
+            <Pressable accessibilityLabel="Ayarlar" onPress={() => router.push("/(tabs)/ayarlar")} style={({ pressed }) => [styles.ustSimge, pressed && styles.basili]}>
+              <MaterialCommunityIcons name="dots-vertical" color="#FFFFFF" size={27} />
+            </Pressable>
+          </View>
+        </View>
+
+        <View style={styles.markaAlani}>
+          <Text style={styles.marka}>Akrep</Text>
+          <Text style={styles.markaAlt}>Hızlı, sakin ve kontrol sende.</Text>
+        </View>
+
+        <View style={styles.aramaKapsayici}>
+          <MaterialCommunityIcons name="magnify" size={28} color="#FF6A2A" />
+          <TextInput
+            accessibilityLabel="Ara veya URL gir"
+            autoCapitalize="none"
+            autoCorrect={false}
+            onChangeText={girdiAyarla}
+            onSubmitEditing={aramayiBaslat}
+            placeholder="Ara veya URL gir"
+            placeholderTextColor="#6F737B"
+            returnKeyType="go"
+            style={styles.aramaGirdisi}
+            value={girdi}
+          />
+          <Pressable accessibilityLabel="Aramayı başlat" onPress={aramayiBaslat} style={({ pressed }) => [styles.aramaEylemi, pressed && styles.basili]}>
+            <MaterialCommunityIcons name="arrow-up-right" size={23} color="#202124" />
+          </Pressable>
+        </View>
+
+        <View style={styles.modSatiri}>
+          <Pressable accessibilityLabel="AI modu" onPress={() => router.push("/yapay-zeka")} style={({ pressed }) => [styles.modButonu, pressed && styles.basili]}>
+            <MaterialCommunityIcons name="creation" color="#2E3137" size={24} />
+            <Text style={styles.modButonMetni}>AI Modu</Text>
+          </Pressable>
+          <Pressable accessibilityLabel="Gizli modda yeni sekme aç" onPress={gizliSekmeAc} style={({ pressed }) => [styles.modButonu, pressed && styles.basili]}>
+            <MaterialCommunityIcons name="incognito" color="#2E3137" size={25} />
+            <Text style={styles.modButonMetni}>Gizli mod</Text>
+          </Pressable>
+        </View>
+
+        <View style={styles.hizliAlan}>
+          <Text style={styles.hizliBaslik}>Hızlı erişim</Text>
+          <FlatList
+            horizontal
+            contentContainerStyle={styles.hizliListe}
+            data={hizliEylemler}
+            keyExtractor={(item) => item.id}
+            showsHorizontalScrollIndicator={false}
+            renderItem={({ item }) => (
+              <Pressable accessibilityLabel={item.ad} onPress={() => router.push(item.rota)} style={({ pressed }) => [styles.hizliOge, pressed && styles.basili]}>
+                <View style={[styles.hizliSimge, { backgroundColor: `${item.renk}20` }]}>
+                  <MaterialCommunityIcons name={item.icon} color={item.renk} size={26} />
+                </View>
+                <Text numberOfLines={1} style={styles.hizliMetin}>{item.ad}</Text>
               </Pressable>
+            )}
+          />
+        </View>
+
+        <Pressable accessibilityLabel="Güvenlik ayrıntılarını incele" onPress={() => router.push("/gizlilik")} style={({ pressed }) => [styles.guvenlikKarti, pressed && styles.basili]}>
+          <View style={styles.guvenlikUst}> 
+            <Text style={styles.guvenlikEtiket}>Akrep Güvenlik</Text>
+            <MaterialCommunityIcons name="shield-check" color="#16833E" size={22} />
+          </View>
+          <View style={styles.guvenlikGovde}>
+            <View style={styles.onaySimge}><MaterialCommunityIcons name="check" size={28} color="#16833E" /></View>
+            <View style={styles.guvenlikMetinleri}>
+              <Text style={styles.guvenlikBaslik}>Gezinme koruman hazır</Text>
+              <Text style={styles.guvenlikAciklama}>{korumaMetni}. Engellenen istek: {durum.engellenenIstekSayisi}.</Text>
             </View>
-            <View style={styles.karsilama}>
-              <View style={styles.amblem}><MaterialCommunityIcons name="zodiac-scorpio" size={42} color="#FF6A2A" /></View>
-              <View style={styles.karsilamaMetinleri}>
-                <Text style={styles.karsilamaBaslik}>Güvenli gezin, sade kal.</Text>
-                <Text style={styles.karsilamaAciklama}>Akrep{String.fromCharCode(39)}in cam yüzeyleri, hızlı sekmeler ve kontrolün sende olduğu bir tarayıcı deneyimi.</Text>
-              </View>
-            </View>
-            <View style={styles.aramaKapsayici}>
-              <MaterialCommunityIcons name="magnify" size={21} color="#A8B3C2" />
-              <TextInput accessibilityLabel="Ara veya adres gir" autoCapitalize="none" autoCorrect={false} onChangeText={girdiAyarla} onSubmitEditing={aramayiBaslat} placeholder="Ara veya adres gir" placeholderTextColor="#7C899A" returnKeyType="go" style={styles.aramaGirdisi} value={girdi} />
-              <Pressable accessibilityLabel="Aramayı başlat" onPress={aramayiBaslat} style={({ pressed }) => [styles.gitButonu, pressed && styles.basili]}><MaterialCommunityIcons name="arrow-up-right" size={18} color="#080B10" /></Pressable>
-            </View>
-            <BolumBasligi baslik="Hızlı erişim" aciklama="Yeni sekmede açılır" />
-            <View style={styles.hizliSatir}>
-              {hizliBaglantilar.map((baglanti) => (
-                <Pressable key={baglanti.id} accessibilityLabel={`${baglanti.ad} aç`} onPress={() => { sekmeAc(baglanti.url); router.push("/tarayici"); }} style={({ pressed }) => [styles.hizliOge, pressed && styles.basili]}>
-                  <View style={[styles.hizliSimge, { backgroundColor: `${baglanti.renk}1D` }]}><MaterialCommunityIcons name={baglanti.icon} size={22} color={baglanti.renk} /></View>
-                  <Text style={styles.hizliMetin}>{baglanti.ad}</Text>
-                </Pressable>
-              ))}
-            </View>
-            <BolumBasligi baslik="Akrep merkezi" aciklama="Gerçek durumlar ve kurulum bilgileri" />
-            <CamKart style={styles.merkezKart}>
-              <SimgeliSatir icon="shield-lock-outline" iconRengi="#FFB000" baslik="Gizlilik tercihleri" aciklama={korumaMetni} onPress={() => router.push("/gizlilik")} />
-              <View style={styles.ayrac} />
-              <SimgeliSatir icon="vpn" iconRengi="#FFB000" baslik="VPN altyapısı" aciklama="Gerçek WireGuard sunucusu henüz yapılandırılmadı." onPress={() => router.push("/vpn")} sagMetin="Kurulum gerekli" />
-              <View style={styles.ayrac} />
-              <SimgeliSatir icon="creation" iconRengi="#FF6A2A" baslik="Yapay zekâ araçları" aciklama="Sayfa verisi gönderilmeden önce izin ister." onPress={() => router.push("/yapay-zeka")} sagMetin="Hazırlık" />
-            </CamKart>
-            <BolumBasligi baslik="Son ziyaretler" aciklama="Normal sekmelerden kaydedilir" />
-          </>
-        }
-        ListEmptyComponent={<CamKart style={styles.bosGecmis}><MaterialCommunityIcons name="history" size={24} color="#A8B3C2" /><Text style={styles.bosBaslik}>Henüz ziyaret kaydı yok</Text><Text style={styles.bosAciklama}>İlk aramanı başlat; ziyaretlerin burada görünür.</Text></CamKart>}
-        renderItem={({ item }) => <Pressable onPress={() => { sekmeAc(item.url); router.push("/tarayici"); }} style={({ pressed }) => [styles.gecmisSatiri, pressed && styles.basili]}><View style={styles.gecmisSimge}><MaterialCommunityIcons name="web" size={18} color="#FF6A2A" /></View><View style={styles.gecmisMetinleri}><Text numberOfLines={1} style={styles.gecmisBasligi}>{item.baslik}</Text><Text numberOfLines={1} style={styles.gecmisUrl}>{item.url}</Text></View><Text style={styles.zaman}>{zamanEtiketi(item.ziyaretZamani)}</Text></Pressable>}
-        ListFooterComponent={<View style={styles.altEylem}><YuvarlakButon icon="plus" etiket="Yeni sekme" tur="birincil" onPress={() => { sekmeAc(); router.push("/tarayici"); }} style={styles.yeniSekmeButonu} /></View>}
-        showsVerticalScrollIndicator={false}
-      />
-    </View>
+          </View>
+          <View style={styles.inceleSatiri}>
+            <Text style={styles.inceleMetni}>İncele</Text>
+            <MaterialCommunityIcons name="arrow-right" color="#FFFFFF" size={20} />
+          </View>
+        </Pressable>
+      </SafeAreaView>
+    </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  ekran: { flex: 1, backgroundColor: "#080B10" }, icerik: { paddingHorizontal: 18, paddingBottom: 32 }, ustAlan: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingTop: 10 }, marka: { color: "#F6F8FB", fontSize: 16, lineHeight: 18, fontWeight: "900", letterSpacing: 2.8 }, markaAlt: { color: "#A8B3C2", fontSize: 11, lineHeight: 15, fontWeight: "700", letterSpacing: 0.8, marginTop: 2 }, gizliButon: { width: 44, height: 44, borderRadius: 18, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255, 176, 0, 0.1)", borderWidth: 1, borderColor: "rgba(255, 176, 0, 0.24)" },
-  karsilama: { flexDirection: "row", gap: 15, alignItems: "center", marginTop: 24, marginBottom: 19 }, amblem: { width: 68, height: 68, borderRadius: 25, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255, 106, 42, 0.13)", borderWidth: 1, borderColor: "rgba(255, 106, 42, 0.3)" }, karsilamaMetinleri: { flex: 1 }, karsilamaBaslik: { color: "#F6F8FB", fontSize: 22, lineHeight: 27, fontWeight: "900" }, karsilamaAciklama: { color: "#A8B3C2", fontSize: 13, lineHeight: 19, marginTop: 5 },
-  aramaKapsayici: { minHeight: 58, flexDirection: "row", alignItems: "center", gap: 10, borderRadius: 29, paddingLeft: 17, paddingRight: 6, backgroundColor: "#121821", borderColor: "rgba(246, 248, 251, 0.15)", borderWidth: 1 }, aramaGirdisi: { flex: 1, minHeight: 48, color: "#F6F8FB", fontSize: 15, lineHeight: 20, fontWeight: "600" }, gitButonu: { width: 43, height: 43, borderRadius: 17, justifyContent: "center", alignItems: "center", backgroundColor: "#FF6A2A" },
-  hizliSatir: { flexDirection: "row", justifyContent: "space-between", gap: 9 }, hizliOge: { flex: 1, alignItems: "center", gap: 8 }, hizliSimge: { width: 55, height: 55, borderRadius: 20, alignItems: "center", justifyContent: "center", borderColor: "rgba(246, 248, 251, 0.08)", borderWidth: 1 }, hizliMetin: { color: "#D8DFE8", fontSize: 11, lineHeight: 15, fontWeight: "700" },
-  merkezKart: { paddingHorizontal: 15, paddingVertical: 2 }, ayrac: { height: StyleSheet.hairlineWidth, backgroundColor: "rgba(168, 179, 194, 0.16)", marginLeft: 53 }, bosGecmis: { padding: 20, alignItems: "center", gap: 6 }, bosBaslik: { color: "#F6F8FB", fontSize: 15, lineHeight: 20, fontWeight: "800", marginTop: 3 }, bosAciklama: { color: "#A8B3C2", fontSize: 12, lineHeight: 18, textAlign: "center" },
-  gecmisSatiri: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 12, borderBottomColor: "rgba(168, 179, 194, 0.1)", borderBottomWidth: StyleSheet.hairlineWidth }, gecmisSimge: { width: 36, height: 36, borderRadius: 13, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255, 106, 42, 0.1)" }, gecmisMetinleri: { flex: 1 }, gecmisBasligi: { color: "#F6F8FB", fontSize: 14, lineHeight: 19, fontWeight: "700" }, gecmisUrl: { color: "#8D9AAC", fontSize: 11, lineHeight: 15, marginTop: 2 }, zaman: { color: "#8D9AAC", fontSize: 10, fontWeight: "700" }, altEylem: { marginTop: 22, alignItems: "center" }, yeniSekmeButonu: { minWidth: 156 }, basili: { opacity: 0.74, transform: [{ scale: 0.97 }] },
+  ekran: { flex: 1, backgroundColor: "#092116" },
+  koyuKatman: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(4, 16, 10, 0.30)" },
+  guvenliAlan: { flex: 1, paddingHorizontal: 22 },
+  ustCubuk: { height: 52, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  ustSag: { flexDirection: "row", alignItems: "center", gap: 10 },
+  ustSimge: { width: 42, height: 42, justifyContent: "center", alignItems: "center", borderRadius: 21, backgroundColor: "rgba(0, 0, 0, 0.16)" },
+  sekmeRozeti: { width: 38, height: 38, alignItems: "center", justifyContent: "center", borderRadius: 13, borderWidth: 2, borderColor: "#FFFFFF", backgroundColor: "rgba(0, 0, 0, 0.18)" },
+  sekmeSayisi: { color: "#FFFFFF", fontWeight: "900", fontSize: 13 },
+  markaAlani: { alignItems: "center", marginTop: 28, marginBottom: 42 },
+  marka: { color: "#FFFFFF", fontSize: 66, lineHeight: 70, letterSpacing: -2.8, fontWeight: "500" },
+  markaAlt: { color: "rgba(255,255,255,0.88)", fontSize: 13, lineHeight: 18, fontWeight: "700", marginTop: 5 },
+  aramaKapsayici: { height: 78, paddingLeft: 23, paddingRight: 12, alignItems: "center", flexDirection: "row", gap: 13, borderRadius: 40, backgroundColor: "#FFFFFF", shadowColor: "#031307", shadowOpacity: 0.28, shadowRadius: 18, elevation: 8 },
+  aramaGirdisi: { flex: 1, minHeight: 54, color: "#2E3137", fontSize: 19, lineHeight: 25, fontWeight: "500" },
+  aramaEylemi: { width: 49, height: 49, borderRadius: 25, alignItems: "center", justifyContent: "center", backgroundColor: "#F0F3EE" },
+  modSatiri: { flexDirection: "row", gap: 12, marginTop: 17 },
+  modButonu: { flex: 1, height: 58, borderRadius: 30, backgroundColor: "rgba(255, 255, 255, 0.96)", alignItems: "center", justifyContent: "center", flexDirection: "row", gap: 11 },
+  modButonMetni: { color: "#2E3137", fontSize: 17, fontWeight: "700" },
+  hizliAlan: { minHeight: 166, paddingTop: 18, paddingBottom: 14, marginTop: 26, borderRadius: 27, backgroundColor: "rgba(248, 251, 238, 0.94)" },
+  hizliBaslik: { color: "#3B473D", fontSize: 13, fontWeight: "800", letterSpacing: 0.4, marginLeft: 21, marginBottom: 10 },
+  hizliListe: { paddingHorizontal: 16, gap: 16 },
+  hizliOge: { width: 73, alignItems: "center", gap: 9 },
+  hizliSimge: { width: 58, height: 58, borderRadius: 29, alignItems: "center", justifyContent: "center" },
+  hizliMetin: { color: "#3B473D", fontSize: 11, lineHeight: 15, fontWeight: "700", textAlign: "center" },
+  guvenlikKarti: { marginTop: 20, padding: 22, borderRadius: 31, backgroundColor: "rgba(250, 255, 241, 0.96)", shadowColor: "#031307", shadowOpacity: 0.20, shadowRadius: 18, elevation: 6 },
+  guvenlikUst: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  guvenlikEtiket: { color: "#39433B", fontSize: 15, fontWeight: "800" },
+  guvenlikGovde: { flexDirection: "row", alignItems: "center", gap: 16, marginTop: 18 },
+  onaySimge: { width: 70, height: 70, alignItems: "center", justifyContent: "center", borderRadius: 23, backgroundColor: "#E5F1DF" },
+  guvenlikMetinleri: { flex: 1 },
+  guvenlikBaslik: { color: "#253129", fontSize: 23, lineHeight: 29, fontWeight: "700" },
+  guvenlikAciklama: { color: "#5B675E", fontSize: 12, lineHeight: 17, fontWeight: "600", marginTop: 5 },
+  inceleSatiri: { alignSelf: "flex-end", paddingHorizontal: 20, height: 48, borderRadius: 24, backgroundColor: "#1A6B12", alignItems: "center", flexDirection: "row", gap: 7, justifyContent: "center", marginTop: 20 },
+  inceleMetni: { color: "#FFFFFF", fontSize: 16, fontWeight: "800" },
+  basili: { opacity: 0.76, transform: [{ scale: 0.97 }] },
 });
